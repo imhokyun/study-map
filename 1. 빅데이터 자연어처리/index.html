@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>빅데이터 자연어처리 · 학습맵</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: { colors: {
+      ink: '#0f1419', panel: '#161c24', line: '#2b3744', spine: '#7b2d3a'
+    }}}
+  }
+</script>
+<style>
+  .caret{transition:transform .12s}
+  .caret.open{transform:rotate(90deg)}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2b3744;border-radius:6px}
+</style>
+</head>
+<body class="bg-ink text-gray-100 antialiased" style="font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif">
+
+<header class="sticky top-0 z-10 bg-ink/95 backdrop-blur border-b border-line px-5 py-3 flex flex-wrap items-center gap-3">
+  <h1 class="text-base font-bold text-white">🧠 빅데이터 자연어처리 · 학습맵</h1>
+  <span id="status" class="text-xs text-gray-500"></span>
+  <div class="ml-auto flex items-center gap-2">
+    <input id="search" placeholder="검색 (노드 펼침·강조)"
+      class="px-3 py-1.5 rounded-lg bg-[#1f2731] border border-line text-sm text-gray-100 w-56 focus:outline-none focus:ring-1 focus:ring-spine">
+    <button onclick="expandAll()" class="px-3 py-1.5 rounded-lg bg-[#1f2731] border border-line text-xs hover:bg-[#27313d]">전체 펼치기</button>
+    <button onclick="collapseAll()" class="px-3 py-1.5 rounded-lg bg-[#1f2731] border border-line text-xs hover:bg-[#27313d]">전체 접기</button>
+  </div>
+</header>
+
+<main class="px-5 py-6 pb-24 max-w-5xl">
+  <p class="text-gray-400 text-sm mb-4">노드를 <b class="text-gray-200">클릭</b>하면 펼쳐지고 다시 클릭하면 접힙니다. ▶ 표시가 있는 항목만 하위 내용이 있어요.</p>
+  <div class="inline-block bg-spine text-white font-bold text-lg px-5 py-2.5 rounded-xl shadow-lg mb-5" id="rootLabel">빅데이터 자연어처리</div>
+  <ul id="tree" class="list-none m-0 p-0"></ul>
+</main>
+
+<script>
+/* ── 깊이별 라벨 스타일(Tailwind 클래스) ── */
+const DEPTH = [
+  "text-base text-white font-semibold bg-[#8a1f2b] px-3 py-0.5 rounded-lg inline-block", // 0: 강의
+  "text-[15px] text-sky-200 font-semibold border-l-[3px] border-sky-500 pl-2",            // 1
+  "text-[14px] text-emerald-200 font-semibold border-l-[3px] border-emerald-500 pl-2",     // 2
+  "text-[14px] text-amber-200 font-semibold border-l-[3px] border-amber-500 pl-2",         // 3
+  "text-[14px] text-gray-300 border-l-[3px] border-gray-600 pl-2"                          // 4+
+];
+const LEAF = "text-[14px] text-gray-300 leading-relaxed";
+
+const normalize = n => (typeof n === "string") ? {name:n} : n;
+
+function renderNodes(arr, depth){
+  const ul = document.createElement("ul");
+  ul.className = depth === 0 ? "list-none m-0 p-0 space-y-1"
+                             : "list-none m-0 pl-6 ml-2.5 border-l-2 border-line space-y-0.5";
+  arr.map(normalize).forEach(node=>{
+    const hasKids = node.children && node.children.length;
+    const li = document.createElement("li");
+    li.className = "node my-0.5";
+
+    const row = document.createElement("div");
+    row.className = "row flex items-start gap-2 px-2 py-1 rounded-lg " +
+      (hasKids ? "branch cursor-pointer hover:bg-[#1c242e]" : "leaf");
+
+    const caret = document.createElement("span");
+    caret.className = "caret flex-none w-4 text-center mt-0.5 select-none " +
+      (hasKids ? "text-gray-400" : "text-transparent");
+    caret.textContent = hasKids ? "▶" : "•";
+
+    const label = document.createElement("span");
+    label.className = "flex-1";
+    const name = document.createElement("span");
+    name.className = "name " + (hasKids ? (DEPTH[Math.min(depth,4)]) : LEAF);
+    name.textContent = node.name;
+    label.appendChild(name);
+
+    row.append(caret, label);
+    li.appendChild(row);
+
+    if(hasKids){
+      const kids = renderNodes(node.children, depth+1);
+      kids.classList.add("kids","hidden");
+      li.appendChild(kids);
+      row.addEventListener("click", e=>{ e.stopPropagation(); toggle(li); });
+    }
+    ul.appendChild(li);
+  });
+  return ul;
+}
+
+function toggle(li, force){
+  const kids = li.querySelector(":scope > .kids");
+  if(!kids) return;
+  const open = force !== undefined ? force : kids.classList.contains("hidden");
+  kids.classList.toggle("hidden", !open);
+  const caret = li.querySelector(":scope > .row > .caret");
+  if(caret) caret.classList.toggle("open", open);
+}
+function setAll(open){ document.querySelectorAll("#tree li.node").forEach(li=>toggle(li, open)); }
+const expandAll = ()=>setAll(true);
+const collapseAll = ()=>setAll(false);
+
+/* ── 검색: 매칭 강조 + 조상 펼침 ── */
+document.getElementById("search").addEventListener("input", e=>{
+  const q = e.target.value.trim();
+  document.querySelectorAll("#tree .name").forEach(n=> n.innerHTML = n.textContent);
+  if(!q) return;
+  const re = new RegExp("("+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+")","gi");
+  document.querySelectorAll("#tree li.node").forEach(li=>{
+    const name = li.querySelector(":scope > .row .name");
+    if(name && re.test(name.textContent)){
+      name.innerHTML = name.textContent.replace(re,'<mark class="bg-amber-300 text-black rounded px-0.5">$1</mark>');
+      let p = li;
+      while(p && p.classList && p.classList.contains("node")){
+        toggle(p, true);
+        p = p.parentElement.closest("li.node");
+      }
+    }
+  });
+});
+
+/* ── 데이터 로딩: manifest → 각 강의 JSON ── */
+async function load(){
+  const status = document.getElementById("status");
+  try{
+    const base = "study-data/";
+    const manifest = await (await fetch(base+"manifest.json")).json();
+    document.getElementById("rootLabel").textContent = manifest.subject || "학습맵";
+    const lectures = await Promise.all(
+      manifest.lectures.map(f => fetch(base+f).then(r=>r.json()))
+    );
+    // 각 강의 = 최상위(depth 0) 노드
+    const rootNodes = lectures.map(l => ({ name: l.title, children: l.nodes }));
+    const tree = renderNodes(rootNodes, 0);
+    tree.id = "tree";
+    document.getElementById("tree").replaceWith(tree);
+    let cnt = 0; const count = a => a.map(normalize).forEach(n=>{cnt++; if(n.children) count(n.children);});
+    count(rootNodes);
+    status.textContent = `· 강의 ${lectures.length}개 · 노드 ${cnt}개`;
+  }catch(err){
+    document.getElementById("tree").innerHTML =
+      `<li class="text-red-300 text-sm leading-relaxed">⚠️ 데이터를 불러오지 못했습니다.<br>
+       브라우저는 보안상 <code class="bg-black/40 px-1 rounded">file://</code>에서 로컬 JSON을 막습니다.
+       아래처럼 <b>로컬 서버</b>로 여세요:<br><br>
+       <code class="bg-black/40 px-2 py-1 rounded block w-fit">cd "1. 빅데이터 자연어처리" &amp;&amp; python3 -m http.server 8000</code>
+       <br>그 뒤 <code class="bg-black/40 px-1 rounded">http://localhost:8000</code> 접속.<br>
+       <span class="text-gray-500">(에러: ${err})</span></li>`;
+  }
+}
+load();
+</script>
+</body>
+</html>

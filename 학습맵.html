@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학습맵 — 시험대비 Fishbone</title>
+<style>
+  :root{
+    --bg:#0f1419; --panel:#161c24; --spine:#7b2d3a; --d0:#8a1f2b;
+    --d1:#2f6f8f; --d2:#4a8f5e; --d3:#9a7b2e; --text:#e8eaed; --muted:#9aa4b2;
+    --line:#33414f; --hit:#ffd76a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.55}
+  header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#0f1419,#0f1419f0);
+    padding:14px 20px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;color:#fff}
+  .subject-tabs{display:flex;gap:8px;margin-left:6px}
+  .tab{padding:6px 14px;border-radius:20px;background:#1f2731;border:1px solid var(--line);
+    color:var(--muted);cursor:pointer;font-size:13px}
+  .tab.active{background:var(--spine);color:#fff;border-color:var(--spine)}
+  .controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .btn{padding:6px 12px;border-radius:8px;background:#1f2731;border:1px solid var(--line);
+    color:var(--text);cursor:pointer;font-size:12.5px}
+  .btn:hover{background:#27313d}
+  #search{padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:#1f2731;
+    color:var(--text);font-size:13px;width:200px}
+  main{padding:24px 20px 80px}
+  .root{display:inline-block;background:var(--spine);color:#fff;font-weight:700;font-size:18px;
+    padding:10px 22px;border-radius:12px;margin-bottom:18px;box-shadow:0 2px 10px #0006}
+  ul.tree{list-style:none;margin:0;padding-left:0}
+  ul.tree ul{list-style:none;margin:0;padding-left:26px;border-left:2px solid var(--line);
+    margin-left:10px}
+  li.node{margin:3px 0}
+  .row{display:flex;align-items:flex-start;gap:8px;padding:4px 8px;border-radius:8px;cursor:default}
+  .row.branch{cursor:pointer}
+  .row.branch:hover{background:#1c242e}
+  .caret{flex:0 0 auto;width:16px;text-align:center;color:var(--muted);transition:transform .12s;
+    user-select:none;margin-top:2px}
+  .caret.open{transform:rotate(90deg)}
+  .caret.leaf{color:transparent}
+  .label{flex:1}
+  .label .name{font-weight:600}
+  .row.leaf .label .name{font-weight:400;color:var(--text)}
+  /* depth accent on the name chip for branches */
+  li.node[data-d="0"] > .row .name{font-size:16px;color:#fff;background:var(--d0);
+    padding:3px 12px;border-radius:8px;display:inline-block}
+  li.node[data-d="1"] > .row.branch .name{color:#bfe0f2;border-left:3px solid var(--d1);padding-left:8px}
+  li.node[data-d="2"] > .row.branch .name{color:#bfe9cd;border-left:3px solid var(--d2);padding-left:8px}
+  li.node[data-d="3"] > .row.branch .name{color:#ecd99a;border-left:3px solid var(--d3);padding-left:8px}
+  .collapsed > ul{display:none}
+  mark{background:var(--hit);color:#000;border-radius:3px;padding:0 2px}
+  .hint{color:var(--muted);font-size:12.5px;margin:0 0 16px}
+  .count{color:var(--muted);font-size:12px}
+  code{background:#0b0f14;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:12.5px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 학습맵</h1>
+  <div class="subject-tabs" id="tabs"></div>
+  <div class="controls">
+    <input id="search" placeholder="검색 (노드 펼침·강조)">
+    <button class="btn" onclick="expandAll()">전체 펼치기</button>
+    <button class="btn" onclick="collapseAll()">전체 접기</button>
+  </div>
+</header>
+<main>
+  <p class="hint">노드를 <b>클릭</b>하면 펼쳐지고, 다시 클릭하면 접힙니다. ▶ 표시가 있는 항목만 하위 내용이 있어요. <span class="count" id="count"></span></p>
+  <div class="root" id="rootLabel"></div>
+  <ul class="tree" id="tree"></ul>
+</main>
+
+<script>
+/* ── 데이터: key:value 사전이 아니라, {name, children}의 중첩 노드 구조 ──
+   리프(설명)는 그냥 문자열, 하위가 있으면 {name, children}. */
+const DATA = {
+  "빅데이터 자연어처리": [
+    { name: "07강 · LoRA (Low-Rank Adaptation)", children: [
+      "PEFT(파라미터 효율적 미세조정)의 대표 기법 — 원본 가중치는 동결, 극소수 파라미터만 학습",
+      { name: "저차원 행렬 분해 (low-rank decomposition)", children: [
+        "가중치 변화량 ΔW를 두 저차원 행렬의 곱으로 근사 → ΔW = B·A",
+        "A = 다운-프로젝션 (r×d), B = 업-프로젝션 (d×r), r = rank (r ≪ d)",
+        "d×d 거대한 ΔW 대신 (d×r)+(r×d) 작은 파라미터만 학습 → r 작을수록 파라미터 급감",
+        "스케일링 α/r 을 ΔWx에 곱함 (얼마나 반영할지) — learning rate 조절과 같은 효과"
+      ]},
+      { name: "병렬 구조 (forward pass)", children: [
+        "h = W₀x + ΔWx = W₀x + B·A·x",
+        "기존 모델 W₀는 변경 없이, LoRA 경로(BAx)를 특정 layer 옆에 병렬로 달아 합산해 다음 레이어로 전달",
+        "W₀ 동결(freeze) / A·B만 학습 (Full FT는 전부 학습)"
+      ]},
+      { name: "초기화 (헷갈림 주의)", children: [
+        "A = 가우시안 초기화 / B = 0 으로 초기화 (반대로 외우지 말 것)",
+        "B=0 덕분에 시작 시 BA=0 → 초기 출력은 원본과 동일 (파인튜닝 초기 안정성)"
+      ]},
+      { name: "적용 위치", children: [
+        "Attention의 Query(q)·Key(k)·Value(v)·Output(o) 투영 행렬 중 선택적으로 적용 가능",
+        "실무에서는 보통 q_proj, v_proj(Query·Value)에 적용하는 경우가 많음",
+        "rank r은 작아도 충분 (예: r=4, 코드 예시 r=8)"
+      ]},
+      "학습 종료 후 기존 레이어와 깔끔하게 합치기 위해(Merge) 활성화 함수 없는 순수 Fully Connected(Linear) 레이어로만 작동",
+      { name: "효과 / 비교", children: [
+        "GPT-3 175B에서 학습 파라미터 최대 10,000배 감소 (약 0.01%) — 성능은 Full FT에 거의 근접",
+        "저장 비용: Full FT는 태스크마다 전체 모델 / LoRA는 작은 A·B 어댑터만",
+        "라이브러리 HuggingFace PEFT, 논문 LoRA (2021)"
+      ]}
+    ]},
+    { name: "12강 · RAG & 벡터 DB", children: [
+      "RAG(검색증강생성) = 외부 지식을 검색해 LLM 답변 근거로 주입 → 환각 감소",
+      { name: "하이브리드 검색", children: [
+        "BM25(희소·키워드) + Dense KNN(밀집·의미)을 병렬 실행 → 키워드·의미 둘 다 포착",
+        "RRF(Reciprocal Rank Fusion): 두 검색 결과 순위를 통합 점수화해 재정렬"
+      ]},
+      { name: "임베딩 / 벡터DB", children: [
+        "bge-m3 (1024차원, 다국어·한국어 강건) 등으로 텍스트를 벡터화",
+        "pgvector / ChromaDB / FAISS / Elasticsearch 등에 저장, cosine 유사도·HNSW 인덱스"
+      ]},
+      "(요약본 12강에서 더 채우기 — 청킹·reranking·OOD 차단 등)"
+    ]},
+    { name: "10강 · 프롬프트 엔지니어링 & Agentic AI", children: [
+      "(채워질 예정) Role/Negative/Grounding/Structured Output, ReAct 등"
+    ]},
+    { name: "13강 · 복합질의 분해 & Workflow", children: [
+      "(채워질 예정) Query 분해, Plan-and-Execute, Reflexion, 라우팅"
+    ]},
+    { name: "14강 · Agentic AI 평가 & 검증", children: [
+      "(채워질 예정) KPI, faithfulness, trajectory, trace 관측"
+    ]},
+    { name: "📌 텀프로젝트 (50점 주관식 1문제)", children: [
+      "공통 논지: LLM을 통제 — ①검색 근거 ②결정적 라우팅 ③사후 검증 (3중 통제)",
+      { name: "1조 InsuranceFinder", children: ["보험 최저가+약관 RAG", "Deterministic Router, 가격Tool vs 약관RAG 분리, Phoenix 관측"] },
+      { name: "2조 Drug Interaction", children: ["의약품×건기식 상호작용", "ReAct, 2-Stage(FAISS→Cohere rerank), 하드블로커"] },
+      { name: "3조 FridgeMate", children: ["냉장고→식단→장보기 E2E", "Supervisor, HyDE+RAG-Fusion+RRF, Plan-Execute/Reflexion"] },
+      { name: "4조 SocrAItes", children: ["소크라테스식 학습코치", "Router 통합, 코사인≥0.4 OOD차단, 4축 Reviewer"] }
+    ]}
+  ],
+  "기계학습": [
+    { name: "10강 · 군집화 (Clustering)", children: [
+      { name: "K-means (하드 할당)", children: [
+        "2단계 반복(coordinate descent): 할당 단계(중심 고정→가까운 중심 배정) / 갱신 단계(할당 고정→평균으로 중심 이동)",
+        "목적함수 J = 군집 내 분산(within-cluster variance)"
+      ]},
+      { name: "GMM / EM (소프트 할당)", children: [
+        "E-step: 책임도 γ(사후확률) 계산 / M-step: 파라미터(μ,Σ,π) 갱신",
+        "K-means 할당↔E-step, 중심갱신↔M-step (구조적 쌍둥이)"
+      ]},
+      "K 선택: 엘보우(WCSS 꺾이는 점) / 실루엣(1에 가까울수록 좋음)",
+      "(요약본·exam_focus에서 더 채우기)"
+    ]},
+    { name: "09 밀도추정 · 11 차원축소 · 12 매니폴드 · 13 신경망", children: [
+      "(채워질 예정 — exam_focus 노트 기반)"
+    ]}
+  ]
+};
+
+/* ── 렌더러 ── */
+let nodeId = 0;
+function normalize(n){ return (typeof n === "string") ? {name:n} : n; }
+
+function renderNodes(arr, depth){
+  const ul = document.createElement("ul");
+  if(depth>0) ul.className=""; else ul.className="tree";
+  arr.map(normalize).forEach(node=>{
+    const li = document.createElement("li");
+    li.className="node";
+    li.dataset.d = depth;
+    const hasKids = node.children && node.children.length;
+    const row = document.createElement("div");
+    row.className = "row " + (hasKids ? "branch" : "leaf");
+    const caret = document.createElement("span");
+    caret.className = "caret " + (hasKids ? "" : "leaf");
+    caret.textContent = hasKids ? "▶" : "•";
+    const label = document.createElement("span");
+    label.className="label";
+    const name = document.createElement("span");
+    name.className="name";
+    name.textContent = node.name;
+    label.appendChild(name);
+    row.appendChild(caret); row.appendChild(label);
+    li.appendChild(row);
+    if(hasKids){
+      li.classList.add("collapsed");
+      const kids = renderNodes(node.children, depth+1);
+      li.appendChild(kids);
+      row.addEventListener("click",(e)=>{ e.stopPropagation(); toggle(li); });
+    }
+    ul.appendChild(li);
+  });
+  return ul;
+}
+function toggle(li){
+  const open = !li.classList.contains("collapsed");
+  li.classList.toggle("collapsed");
+  const caret = li.querySelector(":scope > .row > .caret");
+  if(caret && !caret.classList.contains("leaf")) caret.classList.toggle("open", !open);
+}
+function setAll(collapsed){
+  document.querySelectorAll("li.node").forEach(li=>{
+    if(li.querySelector(":scope > ul")){
+      li.classList.toggle("collapsed", collapsed);
+      const c=li.querySelector(":scope > .row > .caret");
+      if(c) c.classList.toggle("open", !collapsed);
+    }
+  });
+}
+const expandAll=()=>setAll(false);
+const collapseAll=()=>setAll(true);
+
+/* 탭 + 카운트 */
+let current=null;
+function buildTabs(){
+  const tabs=document.getElementById("tabs");
+  tabs.innerHTML="";
+  Object.keys(DATA).forEach((subj,i)=>{
+    const t=document.createElement("div");
+    t.className="tab"+(i===0?" active":"");
+    t.textContent=subj;
+    t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+      t.classList.add("active"); show(subj);};
+    tabs.appendChild(t);
+  });
+}
+function countNodes(arr){let c=0;arr.map(normalize).forEach(n=>{c++;if(n.children)c+=countNodes(n.children);});return c;}
+function show(subj){
+  current=subj;
+  document.getElementById("rootLabel").textContent=subj;
+  const tree=document.getElementById("tree");
+  tree.replaceWith(renderNodes(DATA[subj],0));
+  document.querySelector("ul.tree").id="tree";
+  // 1단계만 펼친 상태로 시작
+  document.querySelectorAll('li.node[data-d="0"]').forEach(li=>{
+    if(li.querySelector(":scope > ul")){li.classList.remove("collapsed");
+      const c=li.querySelector(":scope > .row > .caret"); if(c)c.classList.add("open");}
+  });
+  document.getElementById("count").textContent="· 노드 "+countNodes(DATA[subj])+"개";
+}
+
+/* 검색: 매칭 노드 강조 + 조상 펼침 */
+document.getElementById("search").addEventListener("input",e=>{
+  const q=e.target.value.trim();
+  document.querySelectorAll(".name").forEach(n=>{n.innerHTML=n.textContent;});
+  if(!q){return;}
+  const re=new RegExp("("+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+")","gi");
+  document.querySelectorAll("li.node").forEach(li=>{
+    const name=li.querySelector(":scope > .row .name");
+    if(name && re.test(name.textContent)){
+      name.innerHTML=name.textContent.replace(re,"<mark>$1</mark>");
+      let p=li; while(p && p.classList && p.classList.contains("node")){
+        p.classList.remove("collapsed");
+        const c=p.querySelector(":scope > .row > .caret"); if(c&&!c.classList.contains("leaf"))c.classList.add("open");
+        p=p.parentElement.closest("li.node");
+      }
+    }
+  });
+});
+
+buildTabs();
+show(Object.keys(DATA)[0]);
+</script>
+</body>
+</html>

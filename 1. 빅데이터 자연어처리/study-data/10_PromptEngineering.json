@@ -1,0 +1,432 @@
+{
+  "id": "10_PromptEngineering",
+  "title": "10강 · 프롬프트 엔지니어링과 Agentic AI",
+  "nodes": [
+    {
+      "name": "한 줄 정의 — 이 강의의 핵심은?",
+      "children": [
+        "프롬프트 엔지니어링은 LLM을 'OS처럼' 제어하는 인터페이스이며, 이 프롬프트 기법(Few-shot·CoT·Structured Output·Role·Function Calling)이 그대로 Agent의 빌딩블록이 된다",
+        { "name": "Agent의 본질은?", "children": ["LLM을 두뇌로 삼아 관찰-추론-행동(Observe-Reason-Act) 루프를 반복하며 목표를 자율 달성하는 시스템"] },
+        { "name": "★ 교수 강조 — 이 강의 프롬프트는 무엇을 위한 설명?", "children": ["챗봇용이 아니라 Agent 설계 관점. '프롬프트 부분은 에이전트를 만드는 것과 연결해서 들어라'"] },
+        { "name": "한 줄 대비 — LLM은? Agent는?", "children": ["LLM은 질문에 답한다. Agent는 목표를 향해 계획하고 행동한다"] }
+      ]
+    },
+    {
+      "name": "1. 왜 프롬프트 엔지니어링인가 — LLM = OS 비유",
+      "children": [
+        { "name": "LLM의 한계/이슈는?", "children": ["범용성은 높지만 환각(Hallucination), 유해 출력 등 문제 존재"] },
+        {
+          "name": "기존 제어법은 왜 어려운가?",
+          "children": [
+            { "name": "SFT란?", "children": ["Supervised Fine-Tuning(지도 파인튜닝) — 특정 영역 성능 향상"] },
+            { "name": "RLHF란?", "children": ["인간 피드백 기반 강화학습 — 휴먼 얼라인먼트(인간 의도 정렬). 리워드 모델(보상 모델) + PPO/DPO 학습"] },
+            { "name": "교수: 그래서 무엇으로 제어하나?", "children": ["오픈소스·대형 모델로 파인튜닝은 비용·데이터 면에서 매우 어렵다 → 프롬프트(+요즘은 컨텍스트) 엔지니어링으로 제어"] }
+          ]
+        },
+        {
+          "name": "★ OS 비유 (시험 포인트)",
+          "children": [
+            { "name": "흐름은?", "children": ["명령 프롬프트(command line) → OS가 받아 메모리에 올리고 실행"] },
+            { "name": "프롬프트 엔지니어링의 정의는?", "children": ["LLM이라는 OS에 자연어로 명령을 내려 원하는 결과를 도출하는 행위"] },
+            { "name": "LLM은 OS와 무엇이 다른가?", "children": ["'OS보다 더 크다. OS는 지식이 없지만 LLM은 지식까지 갖고 있다'"] }
+          ]
+        },
+        { "name": "왜 정제·재구성을 반복하나?", "children": ["프롬프트의 미세 조정으로 결과가 크게 달라짐 → 원하는 결과 나올 때까지 정제·재구성 반복"] }
+      ]
+    },
+    {
+      "name": "2. 기본 프롬프트 4요소",
+      "children": [
+        { "name": "① 지시(Instruction)란?", "children": ["수행할 태스크를 명확히. 예: '리뷰의 감성을 긍정/부정으로 분류하시오'"] },
+        { "name": "② 컨텍스트(Context)란?", "children": ["배경 정보·규칙·개념 정의·Few-shot 예시. 예: '긍정/부정 중 하나로만 응답'(규칙)"] },
+        { "name": "③ 입력 데이터(Input Data)란?", "children": ["모델이 처리할 실제 데이터. 예: '리뷰: 영상미는 뛰어났지만 스토리가 아쉬웠어요'"] },
+        { "name": "④ 출력 형식 지시(Output Indicator)란?", "children": ["출력의 시작/형식 표시. 예: '감성:', '분류 결과:'"] },
+        { "name": "교수 보충 — LLM은 앞 3요소를 어떻게 인식?", "children": ["Instruction·Context·Input Data는 모두 하나의 '입력 컨텍스트(Input Prompt)'로 인식된다"] },
+        { "name": "출력 형식은 어디까지 명시 가능?", "children": ["JSON / Markdown / Excel / PPT 등으로 명시 가능 → 다른 시스템과 연동할 때 중요"] }
+      ]
+    },
+    {
+      "name": "3. 프롬프트 실전 5패턴",
+      "children": [
+        { "name": "프롬프트란 한 줄로?", "children": ["LLM에게 보내는 명세서(specification)다"] },
+        {
+          "name": "① Zero-shot vs Few-shot",
+          "children": [
+            { "name": "언제 쓰나?", "children": ["예시 필요 여부 판단 — Few-shot은 형식·기준이 특수할 때"] },
+            { "name": "Few-shot 구조는?", "children": ["Instruction + 예시(input→output, input→output...) + 새 input → 출력 생성"] },
+            { "name": "★ 작동 원리(교수 강조)는?", "children": ["트랜스포머 Attention이 예시들의 input-output 연결 패턴을 파악 → 새 입력에 같은 패턴 적용"] }
+          ]
+        },
+        {
+          "name": "② Chain-of-Thought (CoT)",
+          "children": [
+            { "name": "언제·어떻게 쓰나?", "children": ["복잡한 추론·다단계 판단 시. '단계별로 생각해줘'(Let's think step by step) — 논문에서 시작"] },
+            { "name": "예시는?", "children": ["닭+소 문제를 치환식 → 단계별 풀이"] },
+            { "name": "작동 원리는?", "children": ["중간 추론 과정이 컨텍스트로 작동(Attention이 추론을 참조) → 다음 추론에 활용"] },
+            { "name": "★ 교수: Agent와의 관계는?", "children": ["에이전트 만들 때 가장 많이 쓰는 영역 중 하나"] }
+          ]
+        },
+        {
+          "name": "③ Structured Output (Agent 필수)",
+          "children": [
+            { "name": "언제 쓰나?", "children": ["코드로 파싱할 때"] },
+            { "name": "어떻게 강제하나?", "children": ["JSON 강제 → {\"sentiment\":..., \"score\":..., \"keywords\":[...]}. Temperature=0 + response_format 파라미터로 강제"] },
+            { "name": "★ 교수: 왜 Agent 필수인가?", "children": ["에이전트 간 통신의 기본 자료구조가 JSON → Agent에서 필수"] }
+          ]
+        },
+        {
+          "name": "④ Role Prompting",
+          "children": [
+            { "name": "언제 쓰나?", "children": ["도메인 특화 응답 — 역할 부여 → 관련 지식 활성화 → 스타일 제어"] },
+            { "name": "예시는?", "children": ["'당신은 10년 경력 시니어 백엔드 개발자', '당신은 신경정신과 의사'"] },
+            { "name": "작동 원리는?", "children": ["역할명이 Attention에 들어가는 순간 관련 지식이 연결·활성화되어 응답에 반영"] }
+          ]
+        },
+        {
+          "name": "⑤ Negative Prompting",
+          "children": [
+            { "name": "언제 쓰나?", "children": ["원치 않는 출력 반복 시 — '하지 말 것' 명시 → 품질·일관성 향상"] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Function Calling — Agent의 손발",
+      "children": [
+        { "name": "문제는 무엇인가?", "children": ["LLM은 실시간 정보(현재 날씨·주가) 접근 불가 → '실시간 정보에 접근 불가' 응답"] },
+        { "name": "Function Calling 적용 시 흐름은?", "children": ["LLM이 get_weather(\"Seoul\") 호출을 결정 → API가 결과 반환 → LLM이 자연어로 정리"] },
+        { "name": "작동 흐름 6단계는?", "children": ["① 함수목록 JSON 정의 → ② 메시지+목록 LLM 전달 → ③ LLM이 함수·파라미터 결정 → ④ 실제 함수 실행 → ⑤ 결과를 LLM에 재전달 → ⑥ 최종 응답 생성"] },
+        { "name": "★ 핵심 — LLM은 무엇까지 결정하나?", "children": ["'어떤 함수를 호출할지 + 들어갈 파라미터'까지 결정해서 출력. 실제 실행은 Agent/외부 API가 함"] },
+        {
+          "name": "★ Function 정의 — description이 판단력의 핵심",
+          "children": [
+            { "name": "description의 역할은?", "children": ["LLM이 '언제 이 함수를 쓸지' 판단하는 유일한 근거"] },
+            { "name": "부실하면?", "children": ["잘못된 함수 호출 또는 필요한 함수 미호출"] },
+            { "name": "날씨 함수 — 나쁜 vs 좋은 description", "children": ["✕ '날씨 함수' / ✓ '도시명 받아 날씨·기온 반환. 날씨 질문에만'"] },
+            { "name": "검색 함수 — 나쁜 vs 좋은 description", "children": ["✕ '검색' / ✓ '최신·실시간 정보 필요 시 인터넷 검색'"] },
+            { "name": "이메일 발송 — 나쁜 vs 좋은 description", "children": ["✕ '이메일 발송' / ✓ '명시적 요청이 있을 때만 이메일 발송'"] }
+          ]
+        },
+        {
+          "name": "멀티 툴 Agent 설계 4원칙",
+          "children": [
+            { "name": "① 단일 책임", "children": ["각 함수는 한 가지 일만"] },
+            { "name": "② 명확한 경계", "children": ["언제 쓰는지 description에 명시 (경계 모호 → 잘못된 호출)"] },
+            { "name": "③ 안전 장치", "children": ["파괴적 작업은 명시적 요청 시만"] },
+            { "name": "④ 오류 처리", "children": ["LLM이 이해할 수 있는 에러 메시지"] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. System Prompt — Agent의 헌법",
+      "children": [
+        { "name": "System Prompt란?", "children": ["Agent가 어떤 규칙을 지켜야 하는지 시스템적으로 명시하는 프롬프트. '에이전트의 헌법'"] },
+        {
+          "name": "일반 챗봇 6요소",
+          "children": [
+            { "name": "① 역할 & 정체성", "children": ["'당신은 [회사]의 고객 지원 AI입니다'"] },
+            { "name": "② 행동 지침", "children": ["공손하게 / 3문장 이내 / 모르면 솔직히"] },
+            { "name": "③ 금지 사항(Guardrails)", "children": ["경쟁사 언급 금지 / 임의 할인 약속 금지"] },
+            { "name": "④ 사용 가능한 도구", "children": ["search_kb / create_ticket / lookup_order"] },
+            { "name": "⑤ 출력 형식", "children": ["공감 → 핵심 답변 → 다음 행동 (순서 고정)"] },
+            { "name": "⑥ 컨텍스트(동적 정보)", "children": ["오늘 날짜, 운영시간 등"] }
+          ]
+        },
+        { "name": "없음 vs 있음 비교는?", "children": ["'이 코드 고쳐줘'(매번 다른 품질) ↔ 'Python PEP8·성능·보안 순 검토 + 수정코드'(일관된 구조화 리뷰)"] },
+        {
+          "name": "★ Agent 전용 추가 4요소",
+          "children": [
+            { "name": "① 목표 명세(Objective)", "children": ["'작업 완료 시 반드시 '완료' 명시' — 달성 조건 명확히"] },
+            { "name": "② 추론 지시(Reasoning)", "children": ["매 단계 전 '어떤 도구 필요한가' '이전 결과 올바른가' 생각하게"] },
+            { "name": "③ 도구 사용 원칙(Policy)", "children": ["불확실 → 작은 것부터 검증 / 파괴적 작업 → 사용자 재확인 필수"] },
+            { "name": "④ 중단 조건(Termination)", "children": ["5단계 초과 / 예상 밖 오류 / 영향 범위 과다 → 즉시 중단·보고"] }
+          ]
+        },
+        {
+          "name": "Meta Prompt",
+          "children": [
+            { "name": "정의는?", "children": ["'프롬프트를 생성하는 프롬프트' — LLM으로 더 좋은 System Prompt를 자동 생성·개선"] },
+            { "name": "워크플로우는?", "children": ["① 초안 생성 → ② LLM 테스트 → ③ 문제 케이스 발견 후 Meta Prompt에 추가 → ④ 반복 개선 → ⑤ 평가셋으로 최종 검증"] },
+            { "name": "★ 교수 강조 — 좋은 프롬프트 조건은?", "children": ["반드시 Evaluation/Verification Mechanism(테스트 데이터)을 갖고 검증해야 좋은 프롬프트"] },
+            { "name": "'프롬프트도 코드다'의 의미는?", "children": ["prompts/system/v1.txt → v2.txt 버전 관리 + changelog + 평가셋 기반 성능 비교 필수"] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. 좋은 프롬프트 5원칙 & 흔한 실수 7가지",
+      "children": [
+        { "name": "좋은 프롬프트 5원칙은?", "children": ["① 명확한 맥락 제공 ② 구체적 제약·수치 명시 ③ 출력 형식 예시 제공 ④ 경계 케이스 처리 지침 ⑤ 단계적 지시(복잡 태스크)"] },
+        {
+          "name": "흔한 실수 7가지 → 해결",
+          "children": [
+            { "name": "모호한 지시", "children": ["구체적 기준·수치 명시"] },
+            { "name": "너무 긴 프롬프트", "children": ["핵심을 앞/끝에, 불필요 제거"] },
+            { "name": "형식 강제 없음", "children": ["JSON 등 구조 형식 강제"] },
+            { "name": "경계 케이스 무시", "children": ["예외 처리 지침 추가"] },
+            { "name": "Function desc 부실", "children": ["충분히·정확하게 작성"] },
+            { "name": "★ Temperature 방치", "children": ["구조화 태스크엔 =0"] },
+            { "name": "단발성 테스트", "children": ["평가셋으로 체계적 검증"] }
+          ]
+        },
+        { "name": "★ Temperature 보충(교수) — 무슨 파라미터?", "children": ["언어모델의 자유도/창작도 조절 파라미터. 0에 가까우면 가장 높은 확률 토큰(팩트 기반), 높이면 일정 확률 범위 내에서 랜덤 선택 → 구조화·팩트 태스크는 0으로"] }
+      ]
+    },
+    {
+      "name": "7. LLM vs Agent (★필수 서술)",
+      "children": [
+        { "name": "한 줄 대비는?", "children": ["LLM은 질문에 답한다. Agent는 목표를 향해 계획하고 행동한다"] },
+        { "name": "처리 방식 차이는?", "children": ["LLM = 입력 1회 → 추론 1회 → 출력 → 종료 / Agent = 계획 → 도구 실행 → 추론 → ... 반복"] },
+        { "name": "외부 도구는?", "children": ["LLM = 외부 도구 없음 / Agent = 외부 도구(API·DB·파일) 사용"] },
+        { "name": "행동 변경은?", "children": ["LLM = 결과에 따른 행동 변경 없음 / Agent = 중간 결과 보고 다음 행동 결정"] },
+        { "name": "예시 대비는?", "children": ["LLM = 'CSV 읽는 코드 짜줘' / Agent = '서버 로그 이상 트래픽 탐지 → Slack 알림'"] },
+        { "name": "Agent 핵심 한 줄은?", "children": ["외부 환경과 양방향 상호작용을 반복하며, 중간 결과로 다음 행동을 결정"] },
+        { "name": "교수: Agent는 LLM 이전부터 존재했다?", "children": ["예: 게임 에이전트 — 외부 환경과 상호작용·학습. LLM은 잘못해도 스스로 교정 못 함, Agent는 재시도·재계획 메커니즘을 가짐"] }
+      ]
+    },
+    {
+      "name": "8. Agent의 4가지 구성 요소",
+      "children": [
+        { "name": "① LLM (두뇌)의 역할은?", "children": ["모든 추론·판단 — 어떤 도구를 언제 쓸지, 다음 단계 결정. 모델 선택이 성능 직결"] },
+        { "name": "② Tools (손발)의 역할은?", "children": ["외부 세계 상호작용 — 실시간 검색·웹크롤링·DB조회·API·파일·코드 실행"] },
+        { "name": "③ Memory (기억)의 역할은?", "children": ["정보 저장·인출 — Short-term/Long-term/Episodic. 대부분의 버그 = Memory 관리 실패"] },
+        { "name": "④ Planning (계획)의 역할은?", "children": ["목표→하위목표 분해 — 실행 가능한 단계 설계, 재계획(Replan) 가능. Goal spec 명확할수록 품질↑"] },
+        {
+          "name": "★ Memory 4계층 (시험 포인트)",
+          "children": [
+            { "name": "Sensory — 범위·구현·지속?", "children": ["범위=현재 입력 / 구현=원본 메시지·스크린샷(버퍼) / 지속=매우 짧음"] },
+            { "name": "Short-term (Working) — 범위·구현·지속?", "children": ["범위=현재 대화/작업 / 구현=컨텍스트 윈도우(순서 중요) / 지속=세션 내"] },
+            { "name": "Long-term — 범위·구현·지속?", "children": ["범위=세션 간 지속 / 구현=벡터DB(의미적)·KV Store(사실적) / 지속=영구"] },
+            { "name": "Episodic — 범위·구현·지속?", "children": ["범위=과거 경험 / 구현=로그·작업 히스토리 / 지속=장기"] }
+          ]
+        },
+        { "name": "추가 분류 2가지(슬라이드 후반)는?", "children": ["의미 기억(Semantic, 벡터DB+RAG) / 절차 기억(Procedural, 시스템 프롬프트·규칙·파인튜닝으로 내재화)"] },
+        { "name": "★ 대부분의 Agent 버그 원인은?", "children": ["Memory 관리 실패 — 컨텍스트 윈도우 초과 → 초기 지시 망각 / 잘못된 이전 결과를 사실로 착각"] },
+        { "name": "교수: Episodic vs Long-term 구분은?", "children": ["Episodic = 한 세션 안의 경험 / Long-term = 세션 간 지속(새 창 안 열면 세션 유지). LangGraph로 버퍼 크기·기억량 세팅 가능"] },
+        { "name": "RAG란?", "children": ["Retrieval-Augmented Generation(검색증강생성) — 벡터 검색으로 필요한 지식만 꺼내 LLM 컨텍스트에 주입. Long-term/Semantic Memory의 구현체"] }
+      ]
+    },
+    {
+      "name": "9. Agent 추론 패턴 3가지 (★빈출 비교)",
+      "children": [
+        {
+          "name": "① ReAct (Reason+Act) — 가장 범용적",
+          "children": [
+            { "name": "논문 출처는?", "children": ["Yao et al. (2023) 'ReAct: Synergizing Reasoning and Acting'"] },
+            { "name": "핵심 구조는?", "children": ["Thought ↔ Action ↔ Observation 교차 반복. 추론을 외재화(externalize)해 각 단계가 투명하게 기록"] },
+            { "name": "흐름은?", "children": ["입력 → Thought → Action → Observation → Thought → Action → ... → Final Answer"] },
+            { "name": "★ Action은 누가 수행하나?", "children": ["LLM이 직접 하는 게 아니라 외부 툴/내부 함수 호출로 수행"] },
+            { "name": "종료·무한루프 방지는?", "children": ["답변 도달 시 종료. 무한루프 방지를 위해 루프 횟수 상한 설정"] },
+            { "name": "예시는?", "children": ["'오늘 서울 날씨 + 내일 미팅' → Thought(날씨 먼저) → weather_api → Obs → Thought(캘린더 조회) → calendar_api → Answer"] },
+            { "name": "강점은?", "children": ["단계별 투명 기록 / 즉각 계획 수정 / 단일 Agent 범용"] },
+            { "name": "한계는?", "children": ["단계마다 LLM 호출(비용 누적 최고) / 오류 전파 위험 / 장기 계획 부적합"] },
+            { "name": "적용 상황은?", "children": ["사전에 단계 수를 알 수 없는 동적·예측 불가 작업의 기본 선택"] }
+          ]
+        },
+        {
+          "name": "② Reflection (자기 비평) — 품질 보장",
+          "children": [
+            { "name": "핵심 한 줄은?", "children": ["'생성하고, 비판하고, 개선한다.' Generator(생성자) + Critic(비평가) 분리"] },
+            { "name": "흐름은?", "children": ["입력 → Generator(초안) → Critic(평가) → PASS면 출력 / FAIL이면 최대 N회 재생성"] },
+            { "name": "구현은?", "children": ["System Prompt 분리 — Generator '코드 작성하라' / Critic '버그·보안·성능 찾아 [PASS] 또는 [FAIL: 이유]로'"] },
+            { "name": "강점은?", "children": ["오류 비용 높은 출력(코드·법률·의료) 품질↑ / Critic을 더 강한 모델로 교체 가능 / GitHub Copilot 등 실사용"] },
+            { "name": "★ 주의점은?", "children": ["Critic이 같은 전제면 동일 실수 반복 → 반드시 다른 system prompt·필요시 다른 모델 / 루프 상한 필수"] }
+          ]
+        },
+        {
+          "name": "③ Plan-Execute (계획-실행 분리) — 복잡한 멀티스텝",
+          "children": [
+            { "name": "핵심 한 줄은?", "children": ["'전략가(Planner)와 실행자(Executor)는 다른 역할.' 먼저 전체 계획 수립 → 단계 실행"] },
+            { "name": "★ 비용 최적화 방식은?", "children": ["Planner=대형 모델(전략 판단), Executor=소형 모델(반복 실행) → 2025 프로덕션 표준 전략"] },
+            { "name": "예시는?", "children": ["'경쟁사 A/B/C 뉴스 수집 → 회사별 동향 보고서' → Planner가 Step1~5 워크플로우 작성 → Executor가 각 단계 실행"] },
+            { "name": "교수: ReAct와의 결정적 차이는?", "children": ["ReAct는 즉흥적이라 종속성/병렬 구조를 미리 못 짠다. Plan-Execute는 워크플로우(종속·병렬 포함)를 미리 설계"] },
+            { "name": "적용 상황은?", "children": ["정형화된 반복 멀티스텝 작업(보고서, 데이터 파이프라인)"] }
+          ]
+        },
+        {
+          "name": "★ 패턴 비교표 (ReAct / Reflection / Plan-Execute)",
+          "children": [
+            { "name": "계획 방식은?", "children": ["ReAct=단계마다 즉흥 결정 / Reflection=생성 후 비평·재생성 / Plan-Execute=실행 전 전체 계획"] },
+            { "name": "유연성은?", "children": ["ReAct=높음 / Reflection=중간 / Plan-Execute=낮음"] },
+            { "name": "품질 보장은?", "children": ["ReAct=중간 / Reflection=높음 / Plan-Execute=중간"] },
+            { "name": "비용은?", "children": ["ReAct=누적 높음 / Reflection=2×(생성+비평) / Plan-Execute=계획+실행 분리"] },
+            { "name": "최적 상황은?", "children": ["ReAct=동적·예측 불가 / Reflection=고품질 단일 출력 / Plan-Execute=정형화 멀티스텝"] }
+          ]
+        },
+        { "name": "2025 프로덕션 하이브리드는?", "children": ["Planner(대형)로 고수준 단계 계획(3~5단계) → 각 단계를 ReAct(소형 모델)로 실행 → Reflection으로 최종 품질 검증. 세 패턴 조합"] }
+      ]
+    },
+    {
+      "name": "10. Human-in-the-Loop (HITL) — 고위험 행동에 인간 확인",
+      "children": [
+        { "name": "왜 필요한가?", "children": ["완전 자율 Agent는 아직 위험. 2025 최고 모델도 복잡 시나리오에서 10~20% 오류 발생"] },
+        { "name": "LangGraph 구현은?", "children": ["interrupt_before=[\"delete_record\",\"process_payment\",\"send_email_to_all\"] → 고위험 도구 호출 직전 자동 일시정지 → 인간 확인 후 resume()"] },
+        {
+          "name": "HITL 적용 기준 4가지",
+          "children": [
+            { "name": "복구 불가능한 작업", "children": ["삭제·결제·대량 이메일"] },
+            { "name": "개인 데이터 접근·수정", "children": ["사용자 정보 변경"] },
+            { "name": "외부 시스템 쓰기", "children": ["CRM·ERP 업데이트"] },
+            { "name": "예상치 못한 분기", "children": ["시나리오 외 판단 필요 시"] }
+          ]
+        },
+        {
+          "name": "위험도별 도구 제어",
+          "children": [
+            { "name": "읽기 전용(search/get/query)은?", "children": ["자유롭게 호출"] },
+            { "name": "쓰기(create/update)는?", "children": ["로깅 + 롤백 준비"] },
+            { "name": "삭제·결제(delete/pay/email_all)는?", "children": ["HITL 확인 필수"] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "11. Multi-Agent 토폴로지 3가지",
+      "children": [
+        {
+          "name": "① Chain(순차 체인)",
+          "children": [
+            { "name": "구조는?", "children": ["A→B→C (수집→분석→보고)"] },
+            { "name": "장점은?", "children": ["구현 단순, 단계 결과 전달"] },
+            { "name": "단점은?", "children": ["병렬 불가, 중간 실패 시 전체 영향"] }
+          ]
+        },
+        {
+          "name": "② Star/Orchestrator(중앙 조율)",
+          "children": [
+            { "name": "구조는?", "children": ["Orchestrator가 작업 분배·취합"] },
+            { "name": "장점은?", "children": ["복잡 작업 분배·취합 용이"] },
+            { "name": "단점은?", "children": ["오케스트레이터가 병목"] }
+          ]
+        },
+        {
+          "name": "③ Mesh(P2P)",
+          "children": [
+            { "name": "구조는?", "children": ["에이전트 간 직접 통신, 중앙 없음"] },
+            { "name": "장점은?", "children": ["동적 협력, 사회적 시뮬레이션"] },
+            { "name": "단점은?", "children": ["무한루프·발산 위험, 디버깅 난이도↑, 프로덕션 부적합"] }
+          ]
+        },
+        { "name": "Star와 Plan-Execute의 관계는?", "children": ["Star 구조는 Plan-Execute의 Orchestrator와 유사. 구현: LangGraph, AutoGen, CrewAI"] },
+        { "name": "Mesh의 통신 방식은?", "children": ["에이전트끼리 Agent Card로 서로 발견·통신(A2A 기반). 교수: 프로덕션엔 잘 안 쓰지만 로봇 간 협업 등에서 가능"] },
+        { "name": "2025 프로덕션 트렌드는?", "children": ["'에이전트가 알아서 결정'이 아니라 LangGraph StateGraph 기반 명시적 상태 머신으로 전이를 정의하는 방향이 신뢰성에 유리"] }
+      ]
+    },
+    {
+      "name": "12. 2025 프로토콜 — MCP & A2A",
+      "children": [
+        {
+          "name": "MCP (Model Context Protocol) — 'AI Agent의 USB-C'",
+          "children": [
+            { "name": "★ 누가 설계했나?", "children": ["Anthropic 설계 (교수가 녹취에서 '안드레 카파시?'로 잘못 언급했으나 정정 — Anthropic이 만든 것이 정답)"] },
+            { "name": "역할은?", "children": ["Agent가 외부 도구·데이터소스·서비스에 연결하는 방법을 표준화"] },
+            { "name": "기존(파편화) vs MCP는?", "children": ["기존: 회사마다·에이전트마다 Slack 연동을 중복 개발 / MCP: Slack MCP Server 한 번만 구현 → Claude/OpenAI/LangChain/Cursor 모두 동일 사용"] },
+            { "name": "아키텍처는?", "children": ["MCP Host(Claude Desktop/Cursor/IDE) → MCP Client → MCP Server(Slack/GitHub/PostgreSQL...)"] },
+            { "name": "MCP Server가 제공하는 3 프리미티브는?", "children": ["Tools(실행 가능 함수) / Resources(읽기 가능 데이터) / Prompts(재사용 템플릿)"] },
+            { "name": "현황은?", "children": ["2026년 3월 SDK 월 9,700만 다운로드. Anthropic·OpenAI·Google·Microsoft·AWS 모두 지원. 거버넌스 → Linux Foundation AAIF(Agentic AI Foundation, 2025.12~). GitHub·Slack·Postgres·Notion 등 수천 개 서버"] }
+          ]
+        },
+        {
+          "name": "A2A (Agent-to-Agent) — 수평 통합 표준",
+          "children": [
+            { "name": "★ 누가·언제 출시했나?", "children": ["Google이 2025.4 출시 → 2025.6 Linux Foundation 이관. 100개+ 파트너"] },
+            { "name": "역할은?", "children": ["서로 다른 회사·프레임워크 Agent들이 발견·협력하는 방법 표준화"] },
+            { "name": "어떻게 발견하나?", "children": ["각 Agent가 Agent Card(JSON) 공개(name, capabilities, endpoint, auth) → 다른 Agent가 읽어 적합한 Agent 자동 발견·협력"] }
+          ]
+        },
+        {
+          "name": "★ MCP vs A2A (시험 핵심 차이)",
+          "children": [
+            { "name": "MCP의 통합 방향·의미는?", "children": ["수직 통합: Agent → Tool/Service. 'Agent가 슬랙에 메시지 보내는 방법'(손발)"] },
+            { "name": "A2A의 통합 방향·의미는?", "children": ["수평 통합: Agent ↔ 다른 Agent. '내 Agent가 다른 회사 Agent에 작업 위임'"] },
+            { "name": "둘의 결합 패턴은?", "children": ["Orchestrator Agent —(A2A 위임)→ Specialist Agent —(MCP 사용)→ Slack·DB MCP Server"] }
+          ]
+        },
+        {
+          "name": "주요 프레임워크 비교 (2025)",
+          "children": [
+            { "name": "LangGraph (√추천)", "children": ["주도=LangChain / 특징=StateGraph 기반 명시적 상태 전이 / 적합=프로덕션 복잡 워크플로우"] },
+            { "name": "CrewAI (√추천)", "children": ["주도=오픈소스 / 특징=역할 기반 Multi-Agent, 선언적 API / 적합=간단한 팀 협업"] },
+            { "name": "AutoGen (AG2)", "children": ["주도=Microsoft / 특징=에이전트 간 대화 기반 / 적합=연구·실험 멀티에이전트"] },
+            { "name": "Google ADK", "children": ["주도=Google / 특징=ADK+MCP+A2A 통합 스택 / 적합=GCP 기반 프로덕션"] },
+            { "name": "Semantic Kernel", "children": ["주도=Microsoft / 특징=.NET/Python, A2A 지원 / 적합=엔터프라이즈 .NET"] },
+            { "name": "프로젝트 추천은?", "children": ["LangGraph(상태 관리 명시적 → 디버깅 쉬움) 또는 CrewAI(빠른 프로토타이핑)"] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "13. 언제 Agent를 쓰는가 — 5가지 판단 기준",
+      "children": [
+        { "name": "① 단계 수가 가변적?", "children": ["√Agent='찾을 때까지 검색' / ✕='3개 쿼리 실행하고 합쳐'"] },
+        { "name": "② 중간 결과로 분기?", "children": ["√Agent=결과에 따라 다음 단계 변경 / ✕=항상 같은 순서"] },
+        { "name": "③ 오류 복구 필요?", "children": ["√Agent=실패 시 자동 대안 경로 / ✕=실패 시 사람이 재시도"] },
+        { "name": "④ 비용·지연 감수 가능?", "children": ["√Agent=백그라운드 분석 작업 / ✕=실시간 대화(5~20× 비용)"] },
+        { "name": "⑤ 신뢰성 요구 적합?", "children": ["√Agent=비결정론 허용 분석 / ✕=규정 준수(매번 동일 결과)"] },
+        {
+          "name": "흔한 함정 3가지",
+          "children": [
+            { "name": "① '일단 Agent면 다 해결'", "children": ["Agent는 복잡도를 숨기는 게 아니라 이전(移轉). 단순 문제를 Agent로 → 비용 10×, 디버깅 100×"] },
+            { "name": "② HITL 없는 완전 자율화", "children": ["10~20% 오류 → 고위험 작업에 HITL 없으면 예측 불가 피해"] },
+            { "name": "③ 관찰 불가능한 Agent 배포", "children": ["Trace 없으면 '왜 잘못됐나' 사후 분석 불가 → LangSmith / Phoenix / Langfuse 등 LLMOps 도구로 반드시 추적"] }
+          ]
+        },
+        { "name": "도입 단계별 권장 경로는?", "children": ["1) 단일 LLM 호출(여기서 해결?) → 2) 파이프라인(고정 단계? Chain) → 3) 단일 Agent + ReAct(단계별 추적·평가) → 4) Multi-Agent(단일 Agent 한계 명확할 때만)"] }
+      ]
+    },
+    {
+      "name": "14. Agentic AI 전체 구조 (교수: '여기 매우 중요')",
+      "children": [
+        { "name": "전체 흐름은?", "children": ["사용자/목표(Goal)+제약조건 → [에이전트 코어(LLM)] 추론·계획·의사결정·도구호출 → 도구실행/메모리/외부액션 → 출력/결과 → 안전장치·HITL"] },
+        {
+          "name": "에이전트 코어 4기능 (핵심 패턴 = ReAct Loop)",
+          "children": [
+            { "name": "추론(Reasoning)", "children": ["문제 단계적 분해·분석"] },
+            { "name": "계획(Planning)", "children": ["행동 순서·우선순위 결정"] },
+            { "name": "도구 호출(Tool Calling)", "children": ["도구 동적 선택·API 호출"] },
+            { "name": "자기 반성(Reflection)", "children": ["결과 평가·계획 개선"] },
+            { "name": "★ 핵심 루프 한 줄은?", "children": ["Reason → Act → Observe → Reflect"] }
+          ]
+        },
+        { "name": "관찰-행동 루프(Observe-Act Loop)는?", "children": ["① 목표 입력 → ② 계획 수립 → ③ 도구 실행 → ④ 결과 관찰 → ⑤ 반성·수정 → (목표 미달성 시 ②로 Iterate / 달성 시 최종 결과 반환)"] },
+        {
+          "name": "안전장치(Guardrails) 4요소 & 자율성 스펙트럼",
+          "children": [
+            { "name": "4요소는?", "children": ["정책 준수(Policy) / 위험 감지(불가역 행동 전 경고) / 승인 요청(Human Approval) / 감사 로그(Audit Log)"] },
+            { "name": "자율성 스펙트럼은?", "children": ["Full Agentic(완전 자동, 95%) → Supervised(감독 하, 70%) → Semi-Autonomous(반자동, 45%) → Human-in-the-Loop(인간 주도, 20%). 높을수록 Guardrail 중요도↑"] }
+          ]
+        },
+        {
+          "name": "Supervisor / Orchestrator 멀티에이전트 (LangGraph 예)",
+          "children": [
+            { "name": "Supervisor의 역할은?", "children": ["태스크 분석·에이전트 선택·결과 취합·route(state) 결정"] },
+            { "name": "하위 에이전트는?", "children": ["리서치(LLM+web_search) / 분석(LLM+python_repl) / 액션(LLM+file_writer) — 각각 ReAct 루프"] },
+            { "name": "공유 인프라는?", "children": ["메모리(State, 단기=Context Window / 장기=Vector DB·RAG) + 체크포인터(MemorySaver/SQLite로 State 스냅샷) + 도구 레지스트리(@tool 데코레이터)"] },
+            { "name": "Guardrails의 위치는?", "children": ["모든 컴포넌트·데이터 흐름을 실시간 모니터링·감사"] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "★ 시험 포인트 / 자주 헷갈리는 점",
+      "children": [
+        { "name": "LLM vs Agent (필수 서술)", "children": ["LLM = 단발성 입력1/출력1, 외부도구·교정 없음 / Agent = 목표 향해 계획+루프, 외부도구·재계획·오류복구"] },
+        { "name": "프롬프트 5패턴 ↔ Agent 연결", "children": ["Structured Output(JSON)·Function Calling은 Agent에서 필수. CoT는 Agent의 단계별 추론 기반"] },
+        { "name": "Function Calling 핵심", "children": ["실행은 외부가 하고, LLM은 함수+파라미터만 결정. description이 함수 선택의 유일한 근거"] },
+        { "name": "System Prompt = Agent의 헌법", "children": ["챗봇 6요소 + Agent 전용 4요소(Objective·Reasoning·Policy·Termination)"] },
+        { "name": "추론 패턴 구분 — ReAct?", "children": ["단계마다 즉흥(유연성↑, 비용 누적 최고)"] },
+        { "name": "추론 패턴 구분 — Reflection?", "children": ["Generator/Critic 분리(품질 보장↑, Critic은 반드시 다른 prompt/모델)"] },
+        { "name": "추론 패턴 구분 — Plan-Execute?", "children": ["전체 계획 먼저(정형화·비용 최적화, Planner 대형/Executor 소형)"] },
+        { "name": "Memory 4계층", "children": ["Sensory/Short-term/Long-term/Episodic + 의미·절차 기억. 대부분의 Agent 버그 = Memory 관리 실패"] },
+        { "name": "토폴로지 3종", "children": ["Chain(단순·병렬불가) / Star(중앙조율·병목) / Mesh(P2P·프로덕션 부적합)"] },
+        { "name": "★ MCP vs A2A (가장 헷갈림)", "children": ["MCP = 수직(Agent→Tool, 'USB-C', Anthropic) / A2A = 수평(Agent↔Agent, Agent Card, Google)"] },
+        { "name": "Temperature", "children": ["구조화·팩트 태스크 = 0 (높을수록 랜덤성↑)"] },
+        { "name": "HITL 적용", "children": ["복구 불가(삭제·결제·대량메일)·개인정보·외부쓰기·예상밖 분기 → 인간 승인 필수. 자율성↑ = Guardrail 중요도↑"] },
+        { "name": "Agent 도입 경로", "children": ["단일 LLM → 파이프라인 → 단일 Agent+ReAct → Multi-Agent (한계 드러날 때만 다음 단계로)"] },
+        { "name": "함정", "children": ["Agent는 복잡도를 숨기는 게 아니라 이전한다 → 단순 문제 Agent화 = 비용·디버깅 폭증. 관찰 불가 배포 금지(LLMOps 추적)"] },
+        { "name": "⚠️ 자료 정합성 메모", "children": ["녹취(10.txt)는 STT 오류 많아 슬라이드를 ground truth로 보정. MCP 제작자는 Anthropic이 정답(교수도 직후 정정). A2A/프레임워크 일부는 '다음 시간'으로 이월됨"] }
+      ]
+    }
+  ]
+}

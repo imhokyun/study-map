@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f141a">
+<title>기말고사 학습맵</title>
+<style>
+  :root { --bg:#0f141a; --card:#1a222c; --card2:#222d39; --line:#2c3744; --text:#e6edf3; --sub:#8b97a5; --accent:#5fb3f5; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",Segoe UI,Roboto,sans-serif;
+         background:var(--bg); color:var(--text); min-height:100dvh; padding:env(safe-area-inset-top) 18px calc(env(safe-area-inset-bottom) + 32px); }
+  .wrap { max-width:560px; margin:0 auto; }
+  header { padding:36px 4px 22px; }
+  h1 { font-size:1.55rem; margin:0 0 6px; letter-spacing:-0.02em; }
+  .sub { color:var(--sub); font-size:0.92rem; margin:0; }
+  .grid { display:flex; flex-direction:column; gap:12px; margin-top:8px; }
+  a.card { display:flex; align-items:center; gap:14px; text-decoration:none; color:var(--text);
+           background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px 16px;
+           transition:background .15s, transform .05s; }
+  a.card:active { transform:scale(0.985); background:var(--card2); }
+  .emoji { font-size:1.7rem; flex:none; width:44px; height:44px; display:grid; place-items:center;
+           background:var(--card2); border-radius:12px; }
+  .meta { flex:1; min-width:0; }
+  .meta .t { font-weight:600; font-size:1.05rem; }
+  .meta .d { color:var(--sub); font-size:0.82rem; margin-top:3px; }
+  .chev { color:var(--sub); font-size:1.2rem; flex:none; }
+  footer { margin-top:26px; text-align:center; color:var(--sub); font-size:0.78rem; line-height:1.6; }
+  .disabled { opacity:0.45; pointer-events:none; }
+  .tag { display:inline-block; font-size:0.68rem; color:var(--accent); border:1px solid var(--line);
+         border-radius:999px; padding:1px 8px; margin-left:6px; vertical-align:middle; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>📚 기말고사 학습맵</h1>
+      <p class="sub">2026년도 1학기 · active recall 마인드맵 · 노드를 눌러 떠올리고 펼쳐 확인</p>
+    </header>
+    <div class="grid">
+      <a class="card" href="./1.%20%EB%B9%85%EB%8D%B0%EC%9D%B4%ED%84%B0%20%EC%9E%90%EC%97%B0%EC%96%B4%EC%B2%98%EB%A6%AC/">
+        <span class="emoji">🧠</span>
+        <span class="meta">
+          <span class="t">빅데이터 자연어처리</span>
+          <span class="d">07 LoRA · 09 Physical/Agentic · 10 프롬프트 · 12 RAG · 13 Workflow · 14 평가 · 텀프로젝트</span>
+        </span>
+        <span class="chev">›</span>
+      </a>
+      <!-- 다른 과목 학습맵을 만들면 위 형식으로 카드를 추가하세요 -->
+      <div class="card disabled">
+        <span class="emoji">🗂️</span>
+        <span class="meta">
+          <span class="t">기계학습 · 네트워크 · 딥러닝 <span class="tag">준비 중</span></span>
+          <span class="d">학습맵 만들면 여기에 추가</span>
+        </span>
+      </div>
+    </div>
+    <footer>
+      열리지 않으면 인터넷 연결을 확인하세요(스타일에 CDN 사용).<br>
+      홈 화면에 추가하면 앱처럼 쓸 수 있어요.
+    </footer>
+  </div>
+</body>
+</html>

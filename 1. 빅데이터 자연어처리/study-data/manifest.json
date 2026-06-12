@@ -1,0 +1,12 @@
+{
+  "subject": "빅데이터 자연어처리",
+  "lectures": [
+    "07_LoRA.json",
+    "09_PhysicalAI.json",
+    "10_PromptEngineering.json",
+    "12_RAG.json",
+    "13_Workflow.json",
+    "14_Evaluation.json",
+    "term_project.json"
+  ]
+}

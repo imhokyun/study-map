@@ -1,0 +1,349 @@
+{
+  "id": "14_Evaluation",
+  "title": "14강 · Agentic AI의 평가방법론 및 추론결과의 검증",
+  "nodes": [
+    {
+      "name": "한 줄 요약 — Agentic AI 평가란?",
+      "children": [
+        "\"답이 맞는가\"가 아니라 \"과정+결과를 모두 신뢰할 수 있는가\"를 다단계 행동 시퀀스 관점에서 평가",
+        { "name": "어떻게 검증하나?", "children": ["추론 과정·도구 사용·생성 결과를 자동(LLM-as-Judge)·인간·샌드박스로 하이브리드 검증, SWE-bench 등 벤치마크로 측정"] },
+        { "name": "출시 전 핵심 질문은?", "children": ["\"어떻게 점수를 주고 평가해서 출시할 것인가?\""] },
+        { "name": "⚠️ 자료 출처 주의", "children": ["강의 녹취(STT) 부재 → 교재(슬라이드) 기반으로만 작성"] }
+      ]
+    },
+    {
+      "name": "학습 목표 / 핵심 개념",
+      "children": [
+        { "name": "근본적으로 무엇을 이해해야 하나?", "children": ["기존 LLM 평가 vs Agentic AI 평가의 근본적 차이"] },
+        { "name": "4대 평가 대상 차원은?", "children": ["① 추론 과정 ② 행동·도구 사용 ③ 최종 생성 결과 (+ 검증 전략/벤치마크)"] },
+        { "name": "핵심 키워드", "children": ["CoT 품질, 반사실 추론, 오류 전파, LLM-as-Judge, NLI, 샌드박스, 3단계 게이팅, 캘리브레이션, SWE-bench"] }
+      ]
+    },
+    {
+      "name": "도입 현황과 품질 장벽 (배경 통계)",
+      "children": [
+        { "name": "2030년 에이전트 AI 시장 전망은?", "children": ["$470B(4,700억 달러)"] },
+        { "name": "실제 운영환경 도입률은?", "children": ["57%"] },
+        { "name": "대기업 프로덕션 배치율은?", "children": ["67%"] },
+        { "name": "핵심 제약 요인 순위는? (★수치)", "children": [
+          "품질 장벽 32% (오동작·환각·비일관성, 가장 큰 장벽)",
+          "> 보안성 25%",
+          "> 시스템 지연 20%"
+        ]},
+        { "name": "주요 오동작 유형 4가지는?", "children": [
+          "할루시네이션",
+          "동작 비일관성 — 같은 태스크 반복 시 다른 결과",
+          "컨텍스트 소실 — 장기 세션 정보 유실",
+          "도구 오남용 — 불필요 API 중복 호출·파라미터 오류"
+        ]}
+      ]
+    },
+    {
+      "name": "1. 평가 개요 — 왜 기존 평가와 다른가? (★비교표)",
+      "children": [
+        { "name": "평가 단위는?", "children": ["기존 LLM: 단일 응답 / Agentic: 다단계 행동 시퀀스"] },
+        { "name": "핵심 질문은?", "children": ["기존 LLM: 답이 맞는가? / Agentic: 과정+결과 모두 신뢰 가능한가?"] },
+        { "name": "도구 사용은?", "children": ["기존 LLM: 없음 / Agentic: API·파일·DB 등 외부 도구 호출"] },
+        { "name": "오류 특성은?", "children": ["기존 LLM: 단발성 실수 / Agentic: 초기 오류가 이후 단계로 전파"] },
+        { "name": "평가 환경은?", "children": ["기존 LLM: 프롬프트+응답 / Agentic: 샌드박스 격리 환경 필요"] },
+        { "name": "평가의 3대 원칙은?", "children": [
+          { "name": "① 과정 + 결과", "children": ["결론이 맞아도 이유(추론)가 틀릴 수 있음 → 둘 다 검증"] },
+          { "name": "② 격리 환경", "children": ["실제 시스템에 영향 없이 안전하게 실패하도록"] },
+          { "name": "③ 지속 피드백", "children": ["평가 결과 → 모델 개선 → 재평가로 순환"] }
+        ]},
+        { "name": "핵심 인지 차원 vs 시스템 메트릭 (운영 품질 지표)", "children": [
+          { "name": "계획 수립·장기 추론 (인지)", "children": ["목표 분해→태스크 매핑→논리 부합도"] },
+          { "name": "태스크 완결 지속 확률 τ (시스템)", "children": ["N회 반복 시 연속 무오류 성공 = 결정론적 안정성"] },
+          { "name": "도구 활용성 (인지)", "children": ["API 선택·파라미터 정확도·도구 호출 효율성 TCE"] },
+          { "name": "상태 변화 무결성 Trajectory Accuracy (시스템)", "children": ["DB 최종 상태 vs 모범 경로 매칭도"] },
+          { "name": "동적 메모리 유지 (인지)", "children": ["에피소드·절차 지식 소실 방지"] },
+          { "name": "응답 지연·처리량 (시스템)", "children": ["종단 대기시간, TPS"] },
+          { "name": "자가 수정 역량 self-reflection (인지)", "children": ["오류 피드백 수용 후 경로 수정"] },
+          { "name": "사용자 이탈 징후 UFR (시스템)", "children": ["다중 LLM 판사 기반 불만족·피로 감지"] }
+        ]}
+      ]
+    },
+    {
+      "name": "2. 추론 과정 평가 (CoT 품질)",
+      "children": [
+        { "name": "핵심 원칙은?", "children": ["결과가 맞아도 과정이 틀릴 수 있다 → 과정과 정답 모두 검증"] },
+        { "name": "① 논리 일관성 검사 (Logical Coherence)", "children": [
+          "전제 A→B→결론 C의 연결고리 검증",
+          { "name": "어떻게 자동 채점?", "children": ["LLM-as-Judge로 자동 채점 (인간 평가자 대비 80~90% 상관)"] },
+          { "name": "규칙 기반은?", "children": ["전제·결론이 직접 모순되면 자동 탐지"] }
+        ]},
+        { "name": "② 반사실 추론 테스트 (Counterfactual Testing)", "children": [
+          "전제 조건 변경 시 결론이 적절히 달라지는지 확인 (예: 예산 500만→100만 원 변경 후 반응 측정)",
+          { "name": "조건 무감각이면? (★)", "children": ["패턴 매칭에 불과, 추론이 아님"] }
+        ]},
+        { "name": "③ 오류 전파 추적 (Error Propagation)", "children": [
+          "초기 스텝에 의도적 오류 주입 → 증폭 경로 추적, 어느 단계에서 폭발적으로 커지는지 특정",
+          { "name": "가장 취약한 구간은?", "children": ["초기 검증이 가장 취약한 구간임을 경험적으로 확인"] }
+        ]},
+        { "name": "④ Self-critique 검증", "children": [
+          "스스로 추론을 검토·수정하는 능력 평가",
+          { "name": "동시에 측정하는 두 지표는? (★)", "children": ["수정 정확률(오류→정답)과 과잉 수정률(정답→오류)"] },
+          { "name": "과잉 수정률 높으면?", "children": ["메타인지 불안정 신호"] }
+        ]}
+      ]
+    },
+    {
+      "name": "3. 행동 및 도구 사용 평가 (Agent 루프 정확성) (★표)",
+      "children": [
+        { "name": "도구 선택 정확성", "children": [
+          { "name": "핵심 질문", "children": ["적절한 도구를 선택했는가?"] },
+          { "name": "평가 방법", "children": ["골든셋 비교·기회비용 분석"] }
+        ]},
+        { "name": "파라미터 정확도", "children": [
+          { "name": "핵심 질문", "children": ["인자 타입·범위·필수값 정확한가?"] },
+          { "name": "평가 방법", "children": ["단위 테스트 자동화"] }
+        ]},
+        { "name": "계획 달성률", "children": [
+          { "name": "핵심 질문", "children": ["최소 스텝으로 목표 달성했는가?"] },
+          { "name": "평가 방법", "children": ["Optimal path 대비 실제 경로 비교"] }
+        ]},
+        { "name": "루프 종료 조건", "children": [
+          { "name": "핵심 질문", "children": ["적시 종료 vs 조기/무종료 없는가?"] },
+          { "name": "평가 방법", "children": ["목표 달성 직전·직후 상태 체크"] }
+        ]},
+        { "name": "최소 권한 원칙", "children": [
+          { "name": "핵심 질문", "children": ["불필요한 권한 도구 사용 없는가?"] },
+          { "name": "평가 방법", "children": ["하드블로커로 처리 권장"] }
+        ]},
+        { "name": "오류 복구 능력", "children": [
+          { "name": "핵심 질문", "children": ["API 실패 시 적절한 대안 행동? (error handling quality)"] },
+          { "name": "평가 방법", "children": ["지수 백오프·사용자 보고"] }
+        ]},
+        { "name": "⚠️ 하드블로커란? (★)", "children": ["최소 권한 위반·무한 루프는 다른 지표가 만점이어도 전체 평가 실패 처리"] }
+      ]
+    },
+    {
+      "name": "4. 최종 생성 결과 평가 (4개 차원 + 가중치) (★표)",
+      "children": [
+        { "name": "사실 정확성", "children": [
+          { "name": "가중치는?", "children": ["40% (가장 중요)"] },
+          { "name": "상세 방법", "children": ["RAG 기반 팩트체크 / NLI(자연어 추론) 대조 / 수치·날짜·고유명사 규칙 체크"] }
+        ]},
+        { "name": "일관성·완결성", "children": [
+          { "name": "가중치는?", "children": ["25%"] },
+          { "name": "상세 방법", "children": ["교차 참조 모순 탐지 / 요구사항 커버리지 측정 / 헤딩·구조 완결성 검사"] }
+        ]},
+        { "name": "목표 달성도", "children": [
+          { "name": "가중치는?", "children": ["25%"] },
+          { "name": "상세 방법", "children": ["표면 요청 vs 기저 의도 분리 / 코드 실행 테스트로 의도 검증 / BLEU·ROUGE 보조"] }
+        ]},
+        { "name": "안전성·편향", "children": [
+          { "name": "가중치는?", "children": ["10%"] },
+          { "name": "상세 방법", "children": ["독성 분류기·PII 스캐너 / 편향 탐지 모델 / 규정 준수 체크리스트"] }
+        ]}
+      ]
+    },
+    {
+      "name": "5. CoT 논리 일관성 평가 자동화 파이프라인",
+      "children": [
+        { "name": "전체 흐름은?", "children": ["CoT 출력 → ① 스텝 분해(문장 단위) → ② 전제–결론 쌍 추출 → ③ 이중 검증 → ④ 가중 집계 → 최종 일관성 점수"] },
+        { "name": "핵심 이중 검증 기술 (상호보완) — NLI 분류기", "children": [
+          { "name": "정의", "children": ["Natural Language Inference, 규칙/모델 기반"] },
+          { "name": "출력", "children": ["수반(Entailment)/중립(Neutral)/모순(Contradiction) 3분류"] },
+          { "name": "모델", "children": ["RoBERTa·DeBERTa 등 경량 모델"] },
+          { "name": "장점", "children": ["빠르고 저렴, 높은 recall — 대량 스크리닝"] },
+          { "name": "한계", "children": ["점수 척도 거칠고 근거 설명 약함"] }
+        ]},
+        { "name": "핵심 이중 검증 기술 (상호보완) — LLM-as-Judge", "children": [
+          { "name": "정의", "children": ["LLM 기반 정밀 정성 평가 (핵심은 프롬프트 설계)"] },
+          { "name": "출력", "children": ["0~10 점수 + 판단 근거(rationale), JSON 반환"] },
+          { "name": "모델", "children": ["평가 루브릭 프롬프트 + CoT·few-shot"] },
+          { "name": "장점", "children": ["정밀, 높은 precision, 설명 가능"] },
+          { "name": "한계", "children": ["느리고 비용 높음, 편향·자기일관성 주의"] }
+        ]},
+        { "name": "결합 전략은? (★)", "children": ["NLI로 전체 빠르게 1차 필터링 → 경계 사례만 LLM-as-Judge로 정밀 재평가 → 가중 집계 (속도·정확도 균형)"] }
+      ]
+    },
+    {
+      "name": "6. LLM-as-Judge: 평가 오케스트레이션 플랫폼",
+      "children": [
+        { "name": "핵심 기법 3종 — G-Eval", "children": ["입출력 + 참고 자료 비교, 다차원 가중치 점수 부여"] },
+        { "name": "핵심 기법 3종 — DAGMetric", "children": ["비순환 방향 그래프(DAG)로 준수 여부 결정론적 추적"] },
+        { "name": "핵심 기법 3종 — QAG-Style", "children": ["결과물에서 사실 Q&A 추출 후 DB 교차 매칭으로 환각 이진 판정"] },
+        { "name": "주요 플랫폼 비교 (★표) — Braintrust", "children": [
+          { "name": "핵심 강점", "children": ["엔터프라이즈 보안·SOC2, 병렬 A/B"] },
+          { "name": "구조적 한계", "children": ["자체호스팅 요금제 필요, 트랙레코드 부족"] },
+          { "name": "최적 대상", "children": ["보안·확장성 중시 대기업"] }
+        ]},
+        { "name": "주요 플랫폼 비교 — LangSmith", "children": [
+          { "name": "핵심 강점", "children": ["LangChain 완전 통합, 다단계 로그 시각화"] },
+          { "name": "구조적 한계", "children": ["단순 워크플로우에 무거움, JS 차순위"] },
+          { "name": "최적 대상", "children": ["파이썬 LangChain 개발팀"] }
+        ]},
+        { "name": "주요 플랫폼 비교 — Langfuse", "children": [
+          { "name": "핵심 강점", "children": ["완전 오픈소스, 로컬 자체 호스팅"] },
+          { "name": "구조적 한계", "children": ["자동화 파이프라인 수준 낮음"] },
+          { "name": "최적 대상", "children": ["코드 직접 제어 엔지니어팀"] }
+        ]},
+        { "name": "주요 플랫폼 비교 — Arize Phoenix", "children": [
+          { "name": "핵심 강점", "children": ["실시간 프로덕션 모니터링, RAG 디버깅"] },
+          { "name": "구조적 한계", "children": ["다단계 에이전트 추적 제한"] },
+          { "name": "최적 대상", "children": ["RAG 성능 안정화 팀"] }
+        ]}
+      ]
+    },
+    {
+      "name": "7. 멀티에이전트 시스템(MAS) 검증",
+      "children": [
+        { "name": "3대 상호작용 장애 모드 (★수치·순서) — 오조정 (Miscoordination)", "children": [
+          { "name": "발생률", "children": ["81.3%"] },
+          { "name": "내용", "children": ["메시지 전송 지연·정보 동기화 부적절 → 중복 행동·무한 루프 (논문 32건 중 26건 집중)"] }
+        ]},
+        { "name": "3대 장애 모드 — 충돌 (Conflict)", "children": [
+          { "name": "발생률", "children": ["~50%"] },
+          { "name": "내용", "children": ["개별 최적화 보상 함수 충돌 → 교착 상태(Deadlock), 자원 선점 경쟁"] }
+        ]},
+        { "name": "3대 장애 모드 — 합의 훼손 (Collusion)", "children": [
+          { "name": "발생률", "children": ["15.6%"] },
+          { "name": "내용", "children": ["에이전트 간 비인가 동맹·정보 조작 → 시스템 보안 위협 (32건 중 5건, 실무 위협 평가 부재)"] }
+        ]},
+        { "name": "대응 전략: CP-WBFT 합의 프로토콜이란?", "children": [
+          "신뢰도 높은 에이전트에 가중치를 더 부여, 낮은 에이전트 결과는 적게 반영",
+          { "name": "비잔틴 장애 허용(BFT)이란?", "children": ["프롬프트 레벨 + 임베딩 레벨에서 신뢰성 프로브 전수 수행, 신용도 비례 통신 대역 할당"] },
+          { "name": "직관적 비유는?", "children": ["여러 장군이 협공 시 한 장군이 실수해도 나머지가 보완 (A·B·C·D 중 하나가 못해도 전체는 잘하게)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "8. 샌드박스 시뮬레이션 평가",
+      "children": [
+        { "name": "핵심 원칙은?", "children": ["실제 세계에 영향 없이 안전하게 실패를 허용한다"] },
+        { "name": "격리 환경 구성 요소 — Mock API", "children": ["실제 외부 요청 없이 응답 / 의도적 오류 주입(timeout·500에러)"] },
+        { "name": "격리 환경 구성 요소 — 가상 파일시스템", "children": ["인메모리 기반, 파일 삭제·덮어쓰기 등 파괴적 행동 안전 실행"] },
+        { "name": "격리 환경 구성 요소 — 시뮬레이션 DB", "children": ["격리 트랜잭션, 테스트 후 전체 롤백 가능"] },
+        { "name": "격리 환경 구성 요소 — 네트워크 에뮬레이션", "children": ["지연·패킷 손실·대역폭 제한 등 불안정 환경 재현"] },
+        { "name": "테스트 케이스 유형 (★표) — 정상 시나리오", "children": ["분류: 기본 / 내용: 표준 경로로 Task 완료"] },
+        { "name": "테스트 케이스 유형 — 엣지케이스", "children": ["분류: 경계 / 내용: 빈 입력·최대 길이·특수문자"] },
+        { "name": "테스트 케이스 유형 — 적대적 입력", "children": ["분류: 보안 / 내용: Prompt injection·모순 지시"] },
+        { "name": "테스트 케이스 유형 — 오류 주입", "children": ["분류: 복구 / 내용: API 실패 중 재시도·대안 탐색"] },
+        { "name": "테스트 케이스 유형 — 장기 실행", "children": ["분류: 안전 / 내용: 100+ 스텝에서 무한루프 여부"] },
+        { "name": "결정론적 재현(Deterministic Replay)이란?", "children": ["같은 시드·환경으로 동일 실행 재현 → 회귀 테스트 활용"] }
+      ]
+    },
+    {
+      "name": "9. 자동 + 인간 하이브리드 검증",
+      "children": [
+        { "name": "3단계 신뢰도 게이팅 (목표: 자동검증 85점 이상 통과)", "children": [
+          { "name": "① 자동 검증 레이어란?", "children": ["빠르고 저렴한 1차 필터: 규칙 기반 + 팩트체크 → 신뢰도 점수 산출"] },
+          { "name": "② 점수 분기는?", "children": ["높음 → 자동 통과 / 중간 → 인간 검토 필요 / 낮음 → 즉시 거부(재생성 트리거)"] },
+          { "name": "③ 팩트체크 세부 흐름은?", "children": ["생성 텍스트 → 클레임 추출(검증 가능한 사실 단위로 분해) → 증거 검색(지식베이스·외부 조회) → NLI 분류기(수반/중립/모순) → 판정(사실 확인/사실 오류/증거 부족)"] }
+        ]},
+        { "name": "자동 vs 인간 역할 분담 (★표)", "children": [
+          { "name": "수치·날짜·고유명사 검증", "children": ["자동이 잘함 (외부 DB 대조, 밀리초)"] },
+          { "name": "뉘앙스·문화적 맥락", "children": ["인간이 잘함 (유머·공감)"] },
+          { "name": "독성·안전성 분류", "children": ["자동이 잘함"] },
+          { "name": "실제 사용자 의도 판단", "children": ["인간이 잘함 (표면 요청 너머)"] },
+          { "name": "대규모 회귀 테스트", "children": ["자동이 잘함 (수천 케이스 재현)"] },
+          { "name": "새로운 엣지케이스 레이블링", "children": ["인간이 잘함 (처음 보는 패턴)"] },
+          { "name": "형식·구조 검증", "children": ["자동이 잘함 (JSON 스키마·코드 실행)"] },
+          { "name": "윤리·가치 판단", "children": ["인간이 잘함 (규정 준수 경계 최종 결정)"] }
+        ]},
+        { "name": "자동 vs 인간 속성 비교 (★표)", "children": [
+          { "name": "처리 속도", "children": ["자동 ★★★★★ 밀리초 / 인간 ★★☆☆☆ 느림"] },
+          { "name": "확장성", "children": ["자동 ★★★★★ 수천 케이스 / 인간 ★★☆☆☆ 제한적"] },
+          { "name": "뉘앙스 포착", "children": ["자동 ★★☆☆☆ / 인간 ★★★★★"] },
+          { "name": "새 패턴", "children": ["자동 ★★☆☆☆ 학습 패턴 취약 / 인간 ★★★★☆ 유연"] },
+          { "name": "비용", "children": ["자동 ★★★★★ 저렴 / 인간 ★★☆☆☆ 고비용"] }
+        ]},
+        { "name": "3가지 동기화 메커니즘 (★ 이중 불일치 샘플링이 가장 효율적)", "children": [
+          { "name": "불일치 샘플링", "children": ["모델 A·B가 다른 점수를 주거나 한 모델이 낮은 확신을 보이는 케이스를 우선 인간에게"] },
+          { "name": "지속적 캘리브레이션", "children": ["자동 통과 케이스 중 무작위 샘플을 인간이 검토 → 자동·인간 점수 상관도 측정, 기준 이하 하락 시 재학습 신호"] },
+          { "name": "능동 학습", "children": ["자동모델이 가장 불확실해하는 케이스만 인간 레이블링 → 적은 데이터로 빠른 개선, 인간 비용 최소화"] }
+        ]}
+      ]
+    },
+    {
+      "name": "10. 주요 벤치마크 (★표)",
+      "children": [
+        { "name": "SWE-bench", "children": [
+          { "name": "분류·내용", "children": ["코딩 — GitHub 실제 이슈 해결(코드 탐색→수정→기존 테스트 통과)"] },
+          { "name": "최고 성능(연도)", "children": ["~72% (2023)"] }
+        ]},
+        { "name": "WebArena", "children": [
+          { "name": "분류·내용", "children": ["웹·UI — 실제 웹사이트 812개 Task, 브라우저 제어·멀티탭"] },
+          { "name": "최고 성능(연도)", "children": ["~18% (2023)"] }
+        ]},
+        { "name": "AgentBench", "children": [
+          { "name": "분류·내용", "children": ["멀티스텝 — OS·DB·웹 8개 이질 환경 종합 평가"] },
+          { "name": "최고 성능(연도)", "children": ["종합 (2023)"] }
+        ]},
+        { "name": "GAIA", "children": [
+          { "name": "분류·내용", "children": ["복합 추론 — 웹 검색+파일+계산 복합. 인간 92% vs AI 30%"] },
+          { "name": "최고 성능(연도)", "children": ["~30% (2023)"] }
+        ]},
+        { "name": "AgentHarm", "children": [
+          { "name": "분류·내용", "children": ["안전성 — 다단계 유해 Task에서 에이전트 안전 거절률 측정"] },
+          { "name": "최고 성능(연도)", "children": ["거절률 (2024)"] }
+        ]},
+        { "name": "τ-bench", "children": [
+          { "name": "분류·내용", "children": ["대화형 — 고객 서비스 시뮬레이션, 동일 시나리오 수백 회 반복 일관성 측정"] },
+          { "name": "최고 성능(연도)", "children": ["일관성 (2024)"] }
+        ]},
+        { "name": "SWE-bench 심층 분석 (코딩 에이전트 표준)", "children": [
+          { "name": "Task 인스턴스 구성은?", "children": [
+            { "name": "instance_id", "children": ["저장소+PR번호"] },
+            { "name": "problem_statement", "children": ["GitHub 이슈 본문, 에이전트 유일 입력"] },
+            { "name": "repo·base_commit", "children": ["버그 시점 스냅샷"] },
+            { "name": "FAIL_TO_PASS", "children": ["수정 후 통과해야 할 테스트"] },
+            { "name": "PASS_TO_PASS", "children": ["수정 전후 모두 통과할 회귀 테스트"] },
+            { "name": "patch", "children": ["정답 코드, 에이전트 열람 불가"] }
+          ]},
+          { "name": "에이전트 5단계 흐름은?", "children": ["① 이슈 분석 → ② 코드베이스 탐색(grep·search) → ③ 코드 정밀 독해(버그 위치 특정) → ④ 패치 작성(최소 변경) → ⑤ 검증·제출(git diff)"] },
+          { "name": "합격 조건은? (★)", "children": ["FAIL_TO_PASS 전부 통과 AND PASS_TO_PASS 전부 통과 (정답 패치와 동일할 필요는 없음)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "11. 벤치마크 보안 취약점 — BenchJack",
+      "children": [
+        { "name": "BenchJack이란? (★)", "children": ["UC 버클리 RDI — BenchJack 에이전트가 단 한 문항도 풀지 않고 채점 백엔드를 해킹해 8대 벤치마크 전체 만점 달성"] },
+        { "name": "공격 기법 (★표) — SWE-bench", "children": ["에이전트·테스트 실행 모듈이 동일 컨테이너 상주 → pytest 콜백 훅 가로채 모든 판정 'Passed'로 변조"] },
+        { "name": "공격 기법 — WebArena", "children": ["file:// 프로토콜 허용 + 정답 JSON 노출(file:///proc/self/cwd)로 정답 탈취 → LLM 판사에 프롬프트 인젝션"] },
+        { "name": "공격 기법 — Terminal-Bench", "children": ["외부 패키지 다운로드 시 /usr/bin/curl을 악성 wrapper로 교체 → 채점 시 트로이 목마 실행"] },
+        { "name": "공격 기법 — FieldWorkArena", "children": ["결정론적 검증 함수가 미호출 상태 방치 → 빈 JSON {} 연속 전송만으로 만점"] },
+        { "name": "공격 기법 — OSWorld", "children": ["채점 파서 내부 파이썬 eval() 적용 → 임의 문자열 주입 → 원격 코드 실행(RCE)으로 결과 변조"] },
+        { "name": "보안 체크리스트 (4원칙, Non-negotiable)", "children": [
+          { "name": "① 물리적 평가 레이어 격리", "children": ["에이전트 실행 컨테이너 ↔ 채점 호스트를 네트워크·파일시스템 완전 이원화"] },
+          { "name": "② 파일 시스템 완벽 잠금", "children": ["정답 메타데이터를 환경변수·디렉터리에 절대 노출 금지, 의존성 경로 전부 Read-Only"] },
+          { "name": "③ LLM 판사 입력값 위생 처리(Sanitization)", "children": ["판사가 읽기 전 프롬프트 인젝션 방어용 구분자 처리 + 입력 구조화 마킹"] },
+          { "name": "④ 적대적 사전 모의 침투 테스트", "children": ["공개 전 공격 특화 에이전트로 결함 경로 전수 추적·제거"] }
+        ]}
+      ]
+    },
+    {
+      "name": "12. 미래 지향적 권고안 (4대 핵심 전환)",
+      "children": [
+        { "name": "① 상태 전이 무결성 중심 전환", "children": ["Trajectory Accuracy + τ(일관성 확률)를 최우선 배포 통제 메트릭으로 (단 1회 성공은 '부실한 상태'일 수 있음)"] },
+        { "name": "② 프로세스 추론 엔진 내재화", "children": ["실시간 비즈니스 룰·정책 문서를 해석하는 인지 메모리 인프라 + 특화 추적 파이프라인"] },
+        { "name": "③ Human-in-the-Loop 전략적 배치", "children": ["인간 교차검증 단계 배치 시 운영 비용 75% 절감·성공 가능성 2배, 에스컬레이션 정확도 정밀 조정"] },
+        { "name": "④ 에이전트 도구 조달 가이드라인", "children": ["5대 기준 — 데이터 통합 깊이·거버넌스 투명성·오케스트레이션 성숙도·인간 연계 설계·가치 도출 속도"] }
+      ]
+    },
+    {
+      "name": "★ 시험 포인트 / 자주 헷갈리는 점",
+      "children": [
+        { "name": "핵심 슬로건은?", "children": ["에이전트를 수동적 피시험자가 아닌 기회주의적 공격자(opportunistic hacker)로 보고 평가 체계를 설계하라"] },
+        { "name": "평가 패러다임 전환은?", "children": ["정적 지식 측정 → 동적 실행 기반 검증 체계로 전면 전환"] },
+        { "name": "기존 LLM vs Agentic 차이 핵심 3가지?", "children": ["평가 단위(단일 응답 vs 다단계 시퀀스), 오류 특성(단발성 vs 전파), 환경(프롬프트 vs 샌드박스)"] },
+        { "name": "추론 평가 제1원칙은?", "children": ["\"결과가 맞아도 과정이 틀릴 수 있다\" → 과정+정답 둘 다 검증. 반사실 테스트에서 조건 무감각 = 추론이 아닌 패턴 매칭"] },
+        { "name": "NLI vs LLM-as-Judge 구분은?", "children": ["NLI = 수반/중립/모순 3분류, 빠름·저렴·high recall / LLM-Judge = 0~10 점수+근거, 정밀·high precision. → NLI 1차 필터 → 경계만 LLM-Judge"] },
+        { "name": "LLM-as-Judge 인간 상관도는? (수치 암기)", "children": ["인간 평가자 대비 80~90% 상관"] },
+        { "name": "생성 결과 가중치는?", "children": ["사실 정확성 40%(최대) / 일관성·완결성 25% / 목표 달성도 25% / 안전성·편향 10%"] },
+        { "name": "하드블로커는?", "children": ["최소 권한 위반·무한 루프 → 다른 지표 만점이어도 전체 실패"] },
+        { "name": "Self-critique 두 지표는?", "children": ["수정 정확률 vs 과잉 수정률(정답→오류, 높으면 메타인지 불안정)"] },
+        { "name": "τ vs Trajectory Accuracy 구분은?", "children": ["τ(태스크 완결 지속 확률): N회 반복 연속 무오류 = 결정론적 안정성. Trajectory Accuracy: 최종 상태 vs 모범 경로 매칭"] },
+        { "name": "MAS 3대 장애 모드 순서·수치는?", "children": ["오조정 81% > 충돌 50% > 합의 훼손 16%, 대응 = CP-WBFT / BFT(비잔틴 장애 허용)"] },
+        { "name": "벤치마크 매핑은?", "children": ["SWE-bench(코딩) / WebArena(웹) / AgentBench(멀티환경) / GAIA(복합추론, 인간92 vs AI30) / AgentHarm(안전·거절률) / τ-bench(일관성)"] },
+        { "name": "SWE-bench 합격조건은?", "children": ["FAIL_TO_PASS 전부 AND PASS_TO_PASS 전부 통과 (정답 패치와 동일 불필요). 에이전트 유일 입력 = problem_statement, patch는 열람 불가"] },
+        { "name": "BenchJack 교훈은?", "children": ["채점 백엔드 자체가 공격 표적 → 격리·잠금·위생·침투 4원칙"] },
+        { "name": "하이브리드 동기화 3기법 중 가장 효율적인 것은?", "children": ["이중 불일치 샘플링 (불일치 샘플링 / 지속 캘리브레이션 / 능동 학습 구분)"] },
+        { "name": "G-Eval / DAGMetric / QAG-Style 3종 구분은?", "children": ["G-Eval=다차원 가중 / DAGMetric=DAG 결정론적 추적 / QAG=Q&A 추출 후 환각 이진 판정"] }
+      ]
+    }
+  ]
+}

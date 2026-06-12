@@ -1,0 +1,66 @@
+{
+  "id": "term_project",
+  "title": "📌 텀프로젝트 (50점 주관식 1문제)",
+  "nodes": [
+    "출제: 4개 팀 발표자료를 종합 검토한 50점짜리 주관식 1문제 → 4팀 가로지르는 비교·종합이 핵심",
+    {
+      "name": "★ 공통 설계 철학 (답안의 중심 논지)",
+      "children": [
+        "네 팀 모두 LLM을 자유롭게 두지 않고 통제 — 3중 통제",
+        "① 검색 근거(Grounding/RAG): 1조 약관 citation, 2조 supp.ai PMID, 3조 recipe_db, 4조 강의자료+코사인≥0.4",
+        "② 결정적 제어: 1조 backend gate, 4조 Router 명시 분기, 3조 Supervisor (↔ 2조만 ReAct로 LLM 자율)",
+        "③ 사후 검증: 4조 4축 Reviewer+재시도, 1조 KPI·trace, 2조 거절·하드블로커"
+      ]
+    },
+    {
+      "name": "1조 InsuranceFinder (보험 최저가+약관)",
+      "children": [
+        "Agent: Deterministic Router + LangGraph StateGraph (price/policy_rag/fallback 분기)",
+        "가격은 보험다모아 Tool 결과만, 보장·면책은 약관 RAG 근거+citation으로 분리",
+        "GLM glm-5.1, bge-m3 1024d, PostgreSQL+pgvector(HNSW), Phoenix/OTel 관측",
+        "철학: LLM은 검증된 결과만 설명, route/state/tool/evidence 계약 > 답변 문장",
+        "예상Q: 가격Tool과 약관RAG 분리 이유 / backend gate로 LLM 경로 자유생성 차단의 장점"
+      ]
+    },
+    {
+      "name": "2조 Drug Interaction (의약품×건기식)",
+      "children": [
+        "Agent: ReAct (create_react_agent), 6개 전문 Tool",
+        "2-Stage Retrieval: FAISS 1차 후보 → Cohere Reranker 2차 재평가 (단일검색 대비 정밀도↑)",
+        "supp.ai API로 상호작용 논문 실시간 조회(PMID), gpt-5.4-nano, Langfuse, SSE",
+        "안전: 임산부·어린이 하드블로커, 근거 없으면 답변 중단(환각 억제·거절)",
+        "예상Q: 2-Stage Reranking 이유 / ReAct vs 다른 패턴 / 근거 없을 때 거절 설계의 의의"
+      ]
+    },
+    {
+      "name": "3조 FridgeMate (냉장고→식단→장보기 E2E)",
+      "children": [
+        "Agent: Supervisor 패턴 (Pantry/Recipe/Meal/Shopping/Judge 5개)",
+        "역할별 기법: Pantry=Function Calling, Meal=Plan-and-Execute, Shopping=ReAct+Reflexion, Recipe=RAG, Judge=Tool 검증",
+        "RAG: ChromaDB+bge-m3, HyDE(가상답변 임베딩) + RAG-Fusion + RRF",
+        "쿠팡 상품: 키워드 매칭 오류(간장→회간장)를 레시피 문맥 LLM 판정으로 개선, SMART P@1 75%(+25%p)",
+        "예상Q: HyDE/RAG-Fusion 정의와 짧은쿼리-긴문서 해결 / Supervisor 이유 / Plan-Execute vs ReAct vs Reflexion"
+      ]
+    },
+    {
+      "name": "4조 SocrAItes (소크라테스식 학습코치)",
+      "children": [
+        "Agent: Router(1 LLM call로 query재작성+route+depth+frustration) → Sub Agents 5노드 → Reviewer",
+        "코사인 유사도 ≥0.4 OOD 차단 (RRF 계산 전 단계) — RAG Top-K가 OOD도 강제 매칭하는 한계 해결",
+        "ES BM25+Dense KNN+RRF+Nori, GPT-4o/4o-mini, Adaptive Depth(light2/std4/deep6), Tavily 보강",
+        "4축 Reviewer(socratic·grounding·encouragement·clarity, 3점 미만 재시도). KPI 직답회피≥80%·faithfulness≥0.85·반문≥60%",
+        "예상Q: 코사인≥0.4가 RAG Top-K 한계 해결 / Router 통합설계 장점 / 정답 안 주는데 정답을 알아야 하는 역설 / 4축 Reviewer 의의"
+      ]
+    },
+    {
+      "name": "예상 50점 주관식 시나리오",
+      "children": [
+        "A. 공통 설계 철학 비교 (★★★) — 네 팀의 LLM 통제 공통전략과 차이를 RAG·Agent·평가 관점에서",
+        "B. RAG 검색 고도화 비교 (★★★) — 단순 Top-K 한계와 팀별 개선(코사인필터·HyDE·2-Stage·하이브리드)",
+        "C. Agentic 패턴 선택 (★★) — ReAct/Supervisor/Deterministic Router 비교와 도메인 적합성",
+        "D. 평가·신뢰성 설계 (★★) — KPI·검증루프·안전장치(하드블로커·trace)",
+        "답안 전략: 서론(논지)-본론(팀별 근거)-결론(통찰), 소제목·번호, 용어 영어 병기, '왜'를 반드시"
+      ]
+    }
+  ]
+}

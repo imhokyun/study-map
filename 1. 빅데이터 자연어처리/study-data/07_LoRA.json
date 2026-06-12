@@ -1,0 +1,129 @@
+{
+  "id": "07_LoRA",
+  "title": "07강 · LoRA (Low-Rank Adaptation)",
+  "nodes": [
+    {
+      "name": "한 줄 정의 — LoRA란?",
+      "children": [
+        "PEFT(Parameter-Efficient Fine-Tuning, 파라미터 효율적 미세조정)의 대표 기법",
+        { "name": "핵심 메커니즘은?", "children": ["가중치 변화량 ΔW를 두 저차원 행렬의 곱 B·A로 근사 → 원본 W₀는 동결, A·B만 학습"] },
+        { "name": "왜 효율적인가?", "children": ["GPT-3 기준 전체의 약 0.01%(1/10,000) 파라미터만 학습해도 Full Fine-Tuning에 근접한 성능"] }
+      ]
+    },
+    {
+      "name": "문제의식 — Full Fine-Tuning의 한계",
+      "children": [
+        { "name": "Full FT는 무엇을 학습하나?", "children": [
+          "사전학습 모델의 모든 파라미터를 업데이트",
+          "원본 |Φ₀| 와 동일한 크기의 변화량 |ΔΦ| 을 학습 (|ΔΦ| = |Φ₀|)"
+        ]},
+        { "name": "왜 비싼가?", "children": [
+          "GPT-3 = 175B(1,750억) 파라미터 전부 업데이트 → 막대한 GPU·저장·연산 비용",
+          "태스크마다 175B짜리 모델 복사본을 따로 저장해야 함"
+        ]},
+        { "name": "LoRA의 발상", "children": [
+          "변화량 전체가 아니라, 변화시킬 영역만 저차원 파라미터 Θ로 재매개변수화 (ΔΦ = ΔΦ(Θ))",
+          "학습 대상 |Θ| ≪ |Φ₀| (Θ가 Φ₀보다 훨씬 작음)"
+        ]}
+      ]
+    },
+    {
+      "name": "저차원 행렬 분해 (low-rank decomposition)",
+      "children": [
+        { "name": "핵심 수식은?", "children": ["ΔW = B·A — 거대한 ΔW(d×d)를 직접 학습하지 않고 두 저차원 행렬의 곱으로 근사"] },
+        { "name": "W₀ (원래 가중치)", "children": ["크기 d×k (보통 d≈k) · 동결(freeze)되어 학습 안 함"] },
+        { "name": "A (다운-프로젝션)", "children": ["크기 r×d · 입력 차원 d를 rank r로 줄임"] },
+        { "name": "B (업-프로젝션)", "children": ["크기 d×r · rank r을 다시 출력 차원 d로 올림"] },
+        { "name": "r (rank)", "children": ["하이퍼파라미터, r ≪ d (원래 차원보다 훨씬 작게)"] },
+        { "name": "왜 파라미터가 급감하나?", "children": ["d×d 개 대신 (d×r)+(r×d) 개만 학습 → r이 작을수록 학습 파라미터 급감"] }
+      ]
+    },
+    {
+      "name": "Forward Pass / 병렬 구조",
+      "children": [
+        { "name": "원래 순전파", "children": ["h = W₀x"] },
+        { "name": "LoRA 적용 후 (★수식 암기)", "children": ["h = W₀x + ΔWx = W₀x + B·A·x"] },
+        { "name": "두 경로는 어떻게 합쳐지나?", "children": [
+          "W₀와 ΔW(=BA)가 같은 입력 x를 공유해 각각 곱해짐",
+          "두 출력 벡터를 좌표 방향으로(element-wise) 합산해 다음 레이어로 전달"
+        ]},
+        { "name": "구조 한 줄 요약", "children": ["원본 경로(W₀x)는 그대로, LoRA 경로(BAx)를 특정 layer 옆에 병렬로 달아 더해줌"] }
+      ]
+    },
+    {
+      "name": "초기화 & 스케일링 (★헷갈림 주의)",
+      "children": [
+        { "name": "A는 어떻게 초기화?", "children": ["가우시안 초기화(Gaussian initialization)"] },
+        { "name": "B는 어떻게 초기화?", "children": ["0으로 초기화 → 최초 시점 BA = 0 (반대로 외우지 말 것!)"] },
+        { "name": "B=0의 효과는?", "children": ["시작 시 ΔW=0 이므로 초기 출력은 원본 모델과 동일 → 파인튜닝 초기 안정성 확보"] },
+        { "name": "스케일링은 어떻게?", "children": ["ΔWx 에 α/r 을 곱해 반영 정도 조절"] },
+        { "name": "α (lora_alpha)란?", "children": ["scaling factor 하이퍼파라미터 · α/r 조절은 learning rate(학습률) 조절과 같은 효과"] }
+      ]
+    },
+    {
+      "name": "적용 위치 & rank 선택 (설계 질문)",
+      "children": [
+        { "name": "Q1. 어떤 가중치 행렬에 적용?", "children": [
+          "Attention의 Query(q)·Key(k)·Value(v)·Output(o) 투영 행렬 중 선택적으로 적용 가능",
+          "실무에서는 보통 q_proj, v_proj(Query·Value)에 적용하는 경우가 많음"
+        ]},
+        { "name": "Q2. 최적의 rank r은?", "children": [
+          "r이 매우 작아도(예: r=4) 충분히 좋은 성능 → 보통 작은 rank로 시작",
+          "(코드 예시에서는 r=8 사용)"
+        ]}
+      ]
+    },
+    {
+      "name": "Merge — 학습 후 합치기",
+      "children": [
+        "학습 종료 후 LoRA 레이어를 기존 레이어와 깔끔하게 하나로 합치기(Merge) 위함",
+        { "name": "왜 깔끔하게 합쳐지나?", "children": ["활성화 함수 없는 순수 Fully Connected(Linear) 레이어로만 작동하기 때문 → 선형이라 W₀+BA로 단순 합산 가능"] }
+      ]
+    },
+    {
+      "name": "효과 & Full FT 비교 (★비교표)",
+      "children": [
+        { "name": "효과 한 줄", "children": ["GPT-3 175B에서 태스크 성능 저하 없이 학습 파라미터 최대 10,000배 감소(약 0.01%)"] },
+        { "name": "학습 대상", "children": ["Full FT = 전체 파라미터(|ΔΦ|=|Φ₀|) / LoRA = 저차원 Θ만 (|Θ|≪|Φ₀|)"] },
+        { "name": "GPT-3 학습량", "children": ["Full FT = 175B 전부 / LoRA = 약 0.01%"] },
+        { "name": "원본 가중치", "children": ["Full FT = 모두 업데이트 / LoRA = 동결(freeze)"] },
+        { "name": "저장 비용", "children": ["Full FT = 태스크마다 전체 모델 / LoRA = 작은 A·B 어댑터만"] },
+        { "name": "성능", "children": ["Full FT = 기준 / LoRA = Full FT에 거의 근접"] }
+      ]
+    },
+    {
+      "name": "실습 (HuggingFace PEFT)",
+      "children": [
+        { "name": "설치", "children": ["pip install transformers peft accelerate datasets"] },
+        { "name": "LoraConfig 주요 인자", "children": [
+          { "name": "r", "children": ["low-rank 차원(rank) · 학습 파라미터 수를 좌우 (예: r=8)"] },
+          { "name": "lora_alpha", "children": ["스케일링 계수 α (α/r로 작용) (예: 16)"] },
+          { "name": "target_modules", "children": ["LoRA를 끼워넣을 모듈 (예: q_proj, v_proj) · 모델 구조마다 이름 다름"] },
+          { "name": "lora_dropout", "children": ["LoRA 경로에 적용하는 드롭아웃 (예: 0.05)"] },
+          { "name": "bias", "children": ["bias 학습 여부 (\"none\" = 학습 안 함)"] },
+          { "name": "task_type", "children": ["태스크 유형 (CAUSAL_LM = 인과적 언어모델)"] }
+        ]},
+        { "name": "적용 & 파라미터 확인", "children": [
+          "get_peft_model(model, lora_config) 후 print_trainable_parameters()",
+          "125M 모델에서 학습 파라미터 약 0.47%(약 59만 개) → PEFT 효율성을 수치로 체감"
+        ]},
+        { "name": "학습 루프 포인트", "children": ["Trainer + DataCollatorForLanguageModeling(mlm=False) — causal LM이므로 mlm=False"] },
+        { "name": "출처", "children": ["논문 LoRA: Low-Rank Adaptation of Large Language Models (2021) · 라이브러리 HuggingFace PEFT"] }
+      ]
+    },
+    {
+      "name": "★ 시험 포인트 / 자주 헷갈리는 점",
+      "children": [
+        { "name": "LoRA 한 줄 정의", "children": ["ΔW를 B·A로 근사, W₀ 동결, A·B만 학습하는 PEFT 기법"] },
+        { "name": "수식 암기", "children": ["h = W₀x + BAx"] },
+        { "name": "초기화 헷갈림", "children": ["A=가우시안, B=0 → 시작 시 BA=0 (반대로 외우지 말 것)"] },
+        { "name": "scaling", "children": ["α/r 로 ΔWx 스케일링 = learning rate 조절과 같은 효과"] },
+        { "name": "무엇이 동결/학습되나", "children": ["W₀ 동결 / A·B 학습 (Full FT는 전부 학습)"] },
+        { "name": "파라미터 절감 규모", "children": ["GPT-3에서 약 0.01%(1/10,000), 최대 10,000배 감소"] },
+        { "name": "rank r", "children": ["작아도 됨(예: r=4) · 작을수록 학습 파라미터 적음"] },
+        { "name": "적용 위치", "children": ["Attention의 q/k/v/o 중 선택, 실무는 보통 q·v"] },
+        { "name": "용어 위계", "children": ["PEFT(파라미터 효율적 미세조정) ⊃ LoRA"] }
+      ]
+    }
+  ]
+}

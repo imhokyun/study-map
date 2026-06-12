@@ -1,0 +1,386 @@
+{
+  "id": "09_PhysicalAI",
+  "title": "09강 · Physical AI와 Agentic AI에서의 NLP",
+  "nodes": [
+    {
+      "name": "한 줄 요약 — 이 강의의 핵심은?",
+      "children": [
+        "언어가 '텍스트→텍스트' 변환을 넘어 ①물리적 행동의 명령어(Physical AI)이자 ②에이전트의 내부 추론 언어(Agentic AI)로 확장될 때 발생하는 새로운 NLP 문제를 개념 중심으로 정리",
+        { "name": "어떤 새 NLP 문제가 생기나?", "children": ["Grounding(접지) · 불확실성 · 실시간 피드백 · Long-horizon 일관성"] }
+      ]
+    },
+    {
+      "name": "패러다임 전환 — 무엇에서 무엇으로?",
+      "children": [
+        { "name": "전환의 한 줄", "children": ["Disembodied NLP(탈신체) → Embodied & Agentic NLP(신체화·행위화)"] },
+        { "name": "기존 NLP의 정의는?", "children": ["텍스트 → 텍스트 변환 문제"] },
+        { "name": "★ 최근 2~3년 언어가 맡은 두 가지 새 역할", "children": [
+          { "name": "① Physical AI에서의 언어", "children": ["인간이 로봇에게 내리는 행동 명령 + 로봇이 세계를 인식·기술하는 표현 매체 (3D 공간·물리 법칙·실시간 센서 데이터와 맞닿음)"] },
+          { "name": "② Agentic AI에서의 언어", "children": ["에이전트가 목표 계획·도구 호출·결과 평가를 수행하는 내부 추론 언어 + 다른 에이전트·사람·시스템과 소통하는 통신 프로토콜"] }
+        ]},
+        { "name": "Transformer가 해결한 것 vs 새로 요구되는 것", "children": [
+          { "name": "Transformer가 해결한 것", "children": ["언어 내부의 의미 관계 학습"] },
+          { "name": "Physical & Agentic AI가 요구하는 것", "children": ["'말'을 넘어 현실 세계 데이터를 이해하고 자율적 '행동'으로 옮기는 것"] }
+        ]},
+        { "name": "★ Physical AI 3대 핵심 문제", "children": [
+          { "name": "①", "children": ["Spatial (Language) Grounding — 공간 접지"] },
+          { "name": "②", "children": ["불확실성 처리"] },
+          { "name": "③", "children": ["실시간 피드백 통합"] }
+        ]}
+      ]
+    },
+    {
+      "name": "1. Symbol Grounding Problem (기호 접지 문제)",
+      "children": [
+        { "name": "★ 제기자는 누구?", "children": ["스티븐 하나드(Stevan Harnad, 1990) · 인지과학·AI의 고전적이면서 여전히 미해결인 핵심 과제"] },
+        { "name": "정의는?", "children": ["기호(Symbol) 자체는 의미가 없다. 그 기호가 어떻게 실제 세계의 대상·의미와 연결(Grounding)되는가의 문제"] },
+        { "name": "전통적 AI 비판 — 무엇을 비판했나?", "children": [
+          "기호를 다른 기호로만 정의(사전식)",
+          { "name": "★ 하나드의 비유는?", "children": ["'중국어 사전만으로 중국어를 배우는 것' → 외부 세계와의 감각적 연결 없이는 실체를 알 수 없음"] }
+        ]},
+        { "name": "사과 비유 & LLM", "children": ["'사과'를 백과사전으로만 배운 사람은 사과를 그릴 수 없다. LLM도 마찬가지 — 언어로만 학습한 모델은 언어를 사용할 수 있으나 세계를 이해하지는 못함"] },
+        { "name": "★ 하나드의 해결 제안 (1990)", "children": [
+          "기호가 의미를 가지려면 논리적 계산만으로 부족 → 두 가지 표현 경로 필요",
+          { "name": "아이코닉 표현(Iconic Representations)이란?", "children": ["외부 사물의 물리적 아날로그 형태(감각 데이터)를 그대로 수용"] },
+          { "name": "카테고리적 표현(Categorical Representations)이란?", "children": ["감각 데이터에서 특징 추출 → 사물 분류"] },
+          { "name": "언제 grounding이 발생하나?", "children": ["상향식(Bottom-up) 감각 신호 + 하향식(Top-down) 기호가 결합될 때 비로소 '접지(grounding)' 발생"] }
+        ]},
+        { "name": "Physical & Agentic AI 관점의 의의", "children": [
+          { "name": "LLM의 현 위치는?", "children": ["방대한 텍스트 기호를 학습했지만 여전히 '기호 대 기호' 관계에 머묾"] },
+          { "name": "핵심 질문은?", "children": ["'LLM의 언어 지능을 어떻게 로봇의 몸(Physical body)에 이식해 진짜 의미를 갖게 할 것인가'"] },
+          { "name": "Physical AI의 역할 — 어떤 접지?", "children": ["센서(시각·촉각)로 단어를 실제 물리 속성과 연결 → 물리적 접지 (예: '딱딱한 물체' → 촉각 센서 수치 매핑)"] },
+          { "name": "Agentic AI의 역할 — 어떤 접지?", "children": ["환경과 상호작용·시행착오로 행동 결과의 환경 변화를 관찰 → 인과적 접지 시도"] }
+        ]}
+      ]
+    },
+    {
+      "name": "★ Grounding의 4단계 (빈출 표 — 난이도 순서)",
+      "children": [
+        { "name": "① 언어적 Grounding", "children": [
+          { "name": "설명", "children": ["단어·문장의 의미 관계 이해"] },
+          { "name": "예시", "children": ["'빨간' = 색상 범주"] },
+          { "name": "주요 도전 / 현황", "children": ["Transformer로 어느 정도 해결 (✓ 해결)"] }
+        ]},
+        { "name": "② 시각적 Grounding", "children": [
+          { "name": "설명", "children": ["언어 표현 → 이미지 영역 매핑"] },
+          { "name": "예시", "children": ["'빨간 컵' → bounding box"] },
+          { "name": "주요 도전 / 현황", "children": ["CLIP·Flamingo 등으로 진전 (✓ 진전)"] }
+        ]},
+        { "name": "③ 공간적 Grounding", "children": [
+          { "name": "설명", "children": ["언어 → 3D 좌표계 매핑"] },
+          { "name": "예시", "children": ["'왼쪽' → (x,y,z) 오프셋"] },
+          { "name": "★ 주요 도전 / 현황", "children": ["현재 가장 어려운 단계 (✗ 미해결)"] }
+        ]},
+        { "name": "④ 행동적 Grounding", "children": [
+          { "name": "설명", "children": ["언어 → 실행 가능한 모터 명령"] },
+          { "name": "예시", "children": ["'집어' → 관절 토크 시퀀스"] },
+          { "name": "주요 도전 / 현황", "children": ["물리 제약·안전성 추가 (✗ 미해결)"] }
+        ]},
+        { "name": "★ RLHF instruction following은 어디까지?", "children": ["언어적·의미적 grounding에 해당. Physical AI는 여기에 공간적·행동적 grounding이 추가로 필요 → 전혀 다른 난이도"] },
+        { "name": "Transformer가 'The cup is to the left of the laptop'을 처리할 때?", "children": ["학습하는 것은 통계적 패턴일 뿐, 'left'가 3D에서 무엇을 뜻하는지·로봇 팔이 어떤 궤적을 그려야 하는지 직접 경험한 적 없음"] }
+      ]
+    },
+    {
+      "name": "2. 로봇 Manipulation — SayCan (2022)",
+      "children": [
+        { "name": "논문·출처는?", "children": ["'Do As I Can, Not As I Say: Grounding Language in Robotic Affordances' (Ahn et al., Google Research + Everyday Robots, 2022)"] },
+        { "name": "무엇을 한 연구인가?", "children": ["Symbol Grounding 문제를 실제 로봇 시스템에서 공학적으로 해결하려 한 기념비적 연구. LLM의 방대한 지식 + 로봇의 실제 수행능력(Affordance) 결합"] },
+        { "name": "★ 해결하려는 문제 (Say vs Can)", "children": [
+          { "name": "LLM의 문제 (Say)", "children": ["모호한 명령('배고파, 도와줘')에 훌륭한 계획을 세우지만 현실 제약(위치·배터리·사물 유무)을 모름 → 기호 접지 문제"] },
+          { "name": "로봇의 문제 (Can)", "children": ["구체적 스킬('사과 집어')은 잘하지만 추상적·복잡한 명령 이해와 장기 계획(long-horizon planning) 능력 부족"] },
+          { "name": "착안점은?", "children": ["'LLM은 무엇이 논리적인지 알고(Say), 로봇은 무엇이 가능한지 안다(Can)' → 둘을 결합"] }
+        ]},
+        { "name": "★ 핵심 알고리즘", "children": [
+          { "name": "핵심 공식은?", "children": ["P(task) = P(say) × P(can) — 두 확률의 곱으로 다음 행동 결정"] },
+          { "name": "P(say) (Semantic Likelihood)란?", "children": ["LLM이 판단하는, 명령 수행에 이 행동이 얼마나 논리적으로 적절한가"] },
+          { "name": "P(can) (Affordance Probability)란?", "children": ["로봇의 가치함수(Value Function)가 판단하는, 현재 상태에서 이 행동이 실제 성공할 확률"] },
+          { "name": "정식 수식은?", "children": ["π*(a|s,ℓ) ∝ p_LLM(a|ℓ) × p_affordance(success|a,s)"] },
+          { "name": "수식의 기호 a, s, ℓ는?", "children": ["a = 행동 후보(스킬 라이브러리), s = 현재 로봇·환경 상태, ℓ = 자연어 지시"] }
+        ]},
+        { "name": "아키텍처 구성요소", "children": [
+          { "name": "스킬 라이브러리(Skill Library)란?", "children": [
+            "사전 정의된 스킬 집합 (Google 실험: 약 551개 스킬)",
+            { "name": "각 스킬의 구성은?", "children": ["독립 학습된 저수준 정책(low-level policy) + 성공확률 예측기"] },
+            { "name": "스킬 예시", "children": ["pick up [object], place on [location], open [container], navigate to [location], find [object]"] }
+          ]},
+          { "name": "Affordance Value Function이란?", "children": [
+            "스킬마다 딸린 신경망. 입력 = 카메라 관측값 + 로봇 상태, 출력 = p(success) ∈ [0,1]",
+            { "name": "예시 수치", "children": ["캔 바로 앞 → pick_up_can p=0.92 / 캔에서 3m → p=0.03"] }
+          ]},
+          { "name": "LLM 역할 — 어떤 모델?", "children": [
+            "논문에서 PaLM(540B). 지시문 받아 각 스킬을 다음 토큰으로 생성할 확률(= p_LLM) 출력",
+            { "name": "무엇이 핵심?", "children": ["프롬프트 구성(스킬 목록 + 지시 + 지금까지 행동)이 핵심"] }
+          ]}
+        ]},
+        { "name": "★ 작동 예시 ('커피/콜라를 쏟았어, 도와줘')", "children": [
+          { "name": "pick up the paper towel", "children": ["p_LLM=0.71 · p_affordance=0.08(멀리) · 곱=0.057"] },
+          { "name": "★ pick up the sponge ← 선택", "children": ["p_LLM=0.52 · p_affordance=0.87(가까이) · 곱=0.452 (최대)"] },
+          { "name": "pick up the apple", "children": ["p_LLM=0.02 · p_affordance=0.91 · 곱=0.018"] },
+          { "name": "navigate to paper towel", "children": ["p_LLM=0.44 · p_affordance=0.63 · 곱=0.277"] },
+          { "name": "★ 왜 sponge가 선택되나?", "children": ["언어적으로는 종이타월이 더 적절하나(p_LLM↑), 지금 물리적으로 가능한 건 스펀지(p_affordance↑) → 곱이 최대인 스펀지 선택"] }
+        ]},
+        { "name": "성과", "children": [
+          { "name": "Grounding", "children": ["추상 언어 → 로봇의 실제 물리 능력(Affordance) 연결 성공"] },
+          { "name": "복잡한 명령", "children": ["16단계 이상 long-horizon task 수행"] },
+          { "name": "자연스러운 오류 수정", "children": ["계획한 물건이 안 보이면 P(can)↓ → 자동으로 차선책 선택"] },
+          { "name": "의의", "children": ["로봇의 '몸'이 '뇌(LLM)'에게 현실을 가르치는 구조 / 가용 자원(Skills)을 고려해 스스로 판단하는 에이전트적 면모"] }
+        ]},
+        { "name": "★ 한계 4가지", "children": [
+          { "name": "① 닫힌 스킬 집합", "children": ["새 행동 = 새 스킬 추가 필요. '두 물건 동시에 들어' 처리 불가"] },
+          { "name": "② 사전 정의된 객체 인식", "children": ["새 객체 등장 시 스킬 자체가 없음 (→ RT-2가 해결 시도)"] },
+          { "name": "③ 단방향(open-loop) 계획", "children": ["실행 중 예상치 못한 실패에 언어 수준에서 즉각 대응 메커니즘 부족"] },
+          { "name": "④ 데이터 수집 비용", "children": ["6.8만 개 로봇 경험 데이터 수집은 매우 비싸고 환경 종속적"] }
+        ]}
+      ]
+    },
+    {
+      "name": "3. 로봇 Manipulation — RT-2 (2023)",
+      "children": [
+        { "name": "논문·출처는?", "children": ["'RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control' (Brohan et al., Google DeepMind, 2023)"] },
+        { "name": "한 줄 정의", "children": ["언어-시각-행동을 하나의 거대 신경망으로 완전 통합한 모델"] },
+        { "name": "해결하려는 문제", "children": [
+          { "name": "지식의 분절(Brain-Body Gap)이란?", "children": ["웹 지식 LLM(Brain)과 제어 모델(Body)이 분리 → '멸종된 동물 모양 인형 집어'처럼 새 개념·추론 필요 명령 수행 불가"] },
+          { "name": "일반화의 한계", "children": ["학습하지 않은 물체/처음 보는 환경에서 오작동"] }
+        ]},
+        { "name": "★ 접근 방법 — '로봇 행동도 텍스트(Token)처럼 학습시키자'", "children": [
+          { "name": "① VLA(Vision-Language-Action) 모델", "children": ["기존 VLM을 그대로 가져와 로봇 제어 모델로 전환. 입력=영상+명령, 출력=텍스트가 아닌 Action Tokens(관절 움직임 숫자값)"] },
+          { "name": "② 행동의 토큰화(Action as Tokens)", "children": ["로봇 동작(이동·회전·집기)을 특수 토큰으로 변환 → '문장 완성하듯 다음 동작 예측'"] },
+          { "name": "③ 공동 학습(Co-fine-tuning)", "children": [
+            "웹 데이터(VLM 지식) + 로봇 데이터(RT-1 주행 데이터) 동시 학습",
+            { "name": "각 데이터가 학습시키는 것은?", "children": ["인터넷 이미지로 상식('사자는 고양이과'), 로봇 데이터로 'Pick → 모터 토큰' 매핑을 동시 학습"] },
+            { "name": "결과 예시", "children": ["따로 안 배워도 '공룡 인형 옆 멸종 동물(도도새) 인형 집어'를 상식 기반 수행"] }
+          ]}
+        ]},
+        { "name": "★ 행동 토큰화(Action Tokenization) 상세 — 숫자 암기", "children": [
+          { "name": "로봇 행동 공간은 몇 차원?", "children": ["7차원 (Google Robot 팔)"] },
+          { "name": "7차원의 구성은?", "children": ["엔드이펙터 이동 Δx, Δy, Δz (3축) + 회전 Δroll, Δpitch, Δyaw (3축) + gripper 개방 정도(1)"] },
+          { "name": "terminate는 무엇?", "children": ["이산 명령. 작업 완료 판단 시 에피소드 종료"] },
+          { "name": "★ 한 step은 총 몇 개 정수?", "children": ["8개 정수 (종료 1 + 6-DoF + 그리퍼 1)"] },
+          { "name": "★ 이산화(Discretization)는 몇 bin?", "children": ["각 연속값을 256개 구간(bin)으로 균등 양자화 → 정수 0~255로 표현"] },
+          { "name": "이산화 예시", "children": ["Δx(-0.05~+0.05m) → 구간0=최대왼쪽, 128=정지, 255=최대오른쪽 / 한 타임스텝 = 7개 숫자 → '205 115 128 089 201 176 001' 같은 토큰 시퀀스"] },
+          { "name": "이 토큰들은 어디에 추가되나?", "children": ["기존 언어 모델 어휘집에 특수 토큰으로 추가 → 모델 입장에서 단어 출력과 행동 출력이 구조적으로 동일"] }
+        ]},
+        { "name": "학습 데이터 (두 종류 함께)", "children": [
+          { "name": "① 로봇 시연 데이터", "children": ["(이미지, 언어 지시, 행동 토큰) 트리플, 약 13만 개 에피소드"] },
+          { "name": "② 인터넷 시각-언어 데이터", "children": ["웹 이미지-텍스트 쌍, VQA·캡셔닝·상식 QA, 수십억 개"] }
+        ]},
+        { "name": "핵심 실험 결과", "children": [
+          { "name": "Semantic generalization", "children": ["'화재 진압 물체 집어' → 소화기 직접 본 적 없어도 선택 (언어 지식 전이)"] },
+          { "name": "Visual generalization", "children": ["훈련에 없던 배경·조명·위치에서도 동작"] },
+          { "name": "언어 지시 조합", "children": ["'move the banana to the left of the apple' — 공간 관계 이해·수행"] },
+          { "name": "한계", "children": ["행동 이산화로 인한 정밀 제어 오차, 로봇 시연 데이터 수집 비용 큼, 실시간 환경 변화 대응 제한"] }
+        ]}
+      ]
+    },
+    {
+      "name": "4. 로봇 Manipulation — PaLM-E (2023)",
+      "children": [
+        { "name": "논문·출처는?", "children": ["'PaLM-E: An Embodied Multimodal Language Model' (Google Research + DeepMind, 2023)"] },
+        { "name": "한 줄 정의", "children": ["연속 센서 데이터(이미지·로봇 상태·포인트 클라우드)를 언어 토큰과 같은 공간에 투영 → 단일 LLM이 인식과 계획을 동시에 수행"] },
+        { "name": "해결하려는 문제", "children": [
+          { "name": "감각의 부재(Sensory Gap)란?", "children": ["텍스트로만 학습한 LLM은 '빨간색'·'저기'가 시각적·물리적으로 무엇인지 모름"] },
+          { "name": "데이터 효율성", "children": ["로봇 데이터를 처음부터 학습은 너무 비쌈 → 웹 지식을 로봇 제어로 어떻게 전이(Transfer)할 것인가"] },
+          { "name": "단일 모델 부재", "children": ["시각·관절 상태·텍스트(멀티모달)를 한 신경망에서 동시 처리 어려움"] }
+        ]},
+        { "name": "★ 접근 방법", "children": [
+          { "name": "① 입력을 모두 '언어'처럼 취급(Multimodal Tokens)", "children": [
+            "이미지·센서 데이터를 언어 토큰과 동일 벡터 공간으로 임베딩",
+            { "name": "이미지는 어떻게 토큰화?", "children": ["ViT(Vision Transformer)로 토큰화"] },
+            { "name": "로봇 관절·센서값은?", "children": ["숫자 변환 후 토큰화"] },
+            { "name": "LLM 입장에서 이미지는?", "children": ["'특수한 형태의 단어'. '명령어 + 이미지 + 로봇 상태'가 하나의 긴 문장처럼 입력"] }
+          ]},
+          { "name": "② 거대 모델의 지식 전이(Positive Transfer)", "children": ["PaLM 540B 기반. 거대 모델을 쓰니 로봇 데이터를 조금만 줘도 순식간에 학습, VQA 성능도 오히려 향상"] },
+          { "name": "③ End-to-End Embodiment", "children": ["별도 계획 모델 없이 모델이 직접 '텍스트 기반 계획' 또는 '제어 명령' 출력 → 언어 추론과 물리 행동 간극 제거"] }
+        ]},
+        { "name": "특징", "children": [
+          "540B 파라미터 LLM 기반, '부정적 데이터 없이' 언어·비전·행동 통합",
+          { "name": "★ catastrophic forgetting?", "children": ["다중 단계 추론 + 언어 질문에도 동시 답변 → 로봇 제어가 언어 이해를 저하시키지 않음 ('catastrophic forgetting 없음' 주장)"] },
+          { "name": "입력 예", "children": ["[텍스트 토큰] + [이미지 임베딩] + [로봇 상태 임베딩] 혼합 시퀀스"] }
+        ]}
+      ]
+    },
+    {
+      "name": "★ 세 모델 비교 (빈출 표 — 헷갈림 주의)",
+      "children": [
+        { "name": "SayCan (2022)", "children": [
+          { "name": "LLM 역할", "children": ["고수준 계획 생성"] },
+          { "name": "행동 생성 방식", "children": ["사전 정의 스킬 선택"] },
+          { "name": "★ 핵심 기여", "children": ["Affordance × LLM 결합 (새 객체 일반화 X)"] }
+        ]},
+        { "name": "RT-2 (2023)", "children": [
+          { "name": "LLM 역할", "children": ["직접 행동 토큰 출력"] },
+          { "name": "행동 생성 방식", "children": ["언어 토큰화된 모터 명령"] },
+          { "name": "★ 핵심 기여", "children": ["웹 지식의 로봇 전이 (행동을 언어 토큰으로 직접 출력, Co-fine-tuning)"] }
+        ]},
+        { "name": "PaLM-E (2023)", "children": [
+          { "name": "LLM 역할", "children": ["인식 + 계획 통합"] },
+          { "name": "행동 생성 방식", "children": ["저수준 컨트롤러 호출"] },
+          { "name": "★ 핵심 기여", "children": ["연속 센서의 언어 투영 (인식+계획을 단일 모델로 통합, ViT 사용)"] }
+        ]},
+        { "name": "★ 발전 흐름은?", "children": ["SayCan(LLM+Affordance, 스킬 사전정의→새 객체 일반화 안 됨) → RT-2(행동을 언어 토큰으로 직접 출력, 단 인식·계획 분리) → PaLM-E(인식+계획을 단일 모델로 통합)"] }
+      ]
+    },
+    {
+      "name": "5. 자율주행에서의 NLP — 3개 층위",
+      "children": [
+        { "name": "층위 1 — 엣지케이스 데이터 합성", "children": [
+          "희귀 사고 상황은 실세계 수집 곤란 → LLM으로 자연어 시나리오 생성 → 시뮬레이터 파라미터로 자동 변환 → 합성 훈련 데이터 대량 생산",
+          { "name": "사용 시뮬레이터는?", "children": ["CARLA, nuPlan"] },
+          { "name": "예시", "children": ["'4–6세 아이가 주차 차량 사이에서 3.2m/s로 뛰어나옴, 스쿨존, 에고 차량 50km/h' → 시뮬레이터 객체 배치·속도 파라미터로 변환"] }
+        ]},
+        { "name": "층위 2 — Scene Description → 의사결정", "children": [
+          "센서 데이터를 자연어 장면 기술로 변환 → LLM이 Chain-of-Thought 추론으로 주행 결정",
+          { "name": "예시", "children": ["'전방 30m 정지신호, 우측 차선 자전거 15km/h, 앞차 우회전 깜빡이' → CoT 추론 → 저수준 제어 명령"] }
+        ]},
+        { "name": "층위 3 — 운전자–차량 자연어 인터페이스", "children": [
+          "복합 선호 지시를 실시간 파싱 — (1) 다중 제약 파싱, (2) 모호성 해소, (3) 상황 변화 시 실시간 재계획",
+          { "name": "예시", "children": ["'가장 빠른 경로, 고속도로 제외, 도중 별점 4점↑ 커피숍' (모호성: '고속도로 피해' = 간선도로 포함?)"] }
+        ]},
+        { "name": "핵심 NLP 과제는?", "children": ["다중 제약 파싱 · 모호성 해소 · 실시간 불확실성 처리 · 상황 기반 재계획"] }
+      ]
+    },
+    {
+      "name": "6. HRI (Human-Robot Interaction)",
+      "children": [
+        { "name": "★ 모호성 유형과 해소 전략 (표)", "children": [
+          { "name": "지시 대상 모호", "children": [
+            { "name": "예시 발화", "children": ["'저기 있는 거 가져와'"] },
+            { "name": "해소 전략", "children": ["시선 추적 + 명확화 질문('빨간 컵 말씀이신가요?')"] }
+          ]},
+          { "name": "행동 범위 모호", "children": [
+            { "name": "예시 발화", "children": ["'테이블 정리해줘'"] },
+            { "name": "해소 전략", "children": ["맥락 추론 + 확인(서랍에 넣을까/가지런히 배치할까)"] }
+          ]},
+          { "name": "공간 참조 모호", "children": [
+            { "name": "예시 발화", "children": ["'이쪽으로 가져와'"] },
+            { "name": "해소 전략", "children": ["화자 위치 추적 + 제스처 인식 병행"] }
+          ]},
+          { "name": "상대적 크기 모호", "children": [
+            { "name": "예시 발화", "children": ["'작은 상자 가져와'"] },
+            { "name": "해소 전략", "children": ["컨텍스트 내 상대 크기 비교 후 확인"] }
+          ]}
+        ]},
+        { "name": "★ Grice 대화 격률 4가지 (HRI 적용)", "children": [
+          "양(Quantity) · 질(Quality) · 관계(Relation) · 방식(Manner)",
+          { "name": "로봇이 처리해야 하는 것은?", "children": ["함축(implicature)을 처리해 인간의 미발화 의도를 추론"] }
+        ]},
+        { "name": "실시간 피드백 통합 — 무엇이 필요한가?", "children": [
+          "'아니, 그쪽 말고 오른쪽' → 대명사 지시체 파악 + 시점 기준 판단(로봇 vs 사람) + 실행 중 모터 명령 즉시 수정",
+          { "name": "시간 제약은?", "children": ["전 과정 수백 ms 내 완료 필요"] }
+        ]}
+      ]
+    },
+    {
+      "name": "7. Physical AI NLP의 공통 한계 → Agentic으로의 이행",
+      "children": [
+        { "name": "★ ① Grounding Gap", "children": ["언어 모델의 의미와 물리 세계 실제 관계 사이 간극이 좁혀지지 않음. 텍스트로만 학습한 모델은 물리 제약을 내재화 불가"] },
+        { "name": "★ ② Cascading Error", "children": ["인식 오류 → 언어 해석 오류 → 행동 실패로 전파. 한 단계 실수가 복구 안 되면 전체 작업 실패"] },
+        { "name": "★ ③ Open-Loop 취약성", "children": ["대부분 현재 시스템은 계획 후 실행하는 open-loop → 실행 중 예상치 못한 상황(물체가 굴러 떨어짐)에 언어 수준 복구 능력 부족"] },
+        { "name": "극복 방향은?", "children": ["Agentic 구조 — 에이전트가 실행 중 결과를 지속 관찰하고 언어로 반성하며 계획을 재조정 → 닫힌 루프(Closed Loop)"] }
+      ]
+    },
+    {
+      "name": "8. Agentic AI 개요 — '생성'에서 '행위'로",
+      "children": [
+        { "name": "이번 강의 초점은?", "children": ["기술 상세(ReAct·CoT·Tool Use)는 다음 강의. 이번 강은 '왜 에이전트에게 자연어가 핵심 언어인가' 개념에 집중"] },
+        { "name": "★ 단순 생성 vs 자율 행위 (대비 표)", "children": [
+          { "name": "입출력 패턴", "children": ["기존 LLM(Stateless Generator): 입력→출력, 한 번 생성하면 끝 / Agentic AI(Stateful Actor): 목표→루프, 결과 보고 계속함"] },
+          { "name": "환경·피드백", "children": ["기존 LLM: 환경 없음·피드백 없음 / Agentic: 환경 있음·피드백 있음"] },
+          { "name": "결과에 대한 책임", "children": ["기존 LLM: 책임 없음 / Agentic: 행동 결과가 다음 행동에 영향"] },
+          { "name": "상태", "children": ["기존 LLM: 상태 없음(매 호출 독립) / Agentic: 상태 있음(기억·목표·컨텍스트 유지)"] }
+        ]},
+        { "name": "예시 — '판매 보고서 작성하고 슬랙 공유'", "children": [
+          { "name": "기존 LLM은?", "children": ["'보고서 작성 방법은…' — 텍스트만 생성, 아무것도 안 함"] },
+          { "name": "Agentic AI는?", "children": ["[Perceive] 날짜·도구 파악 → [Plan] DB쿼리→분석→보고서→Slack 분해 → [Act] 쿼리 실행 → [Observe] 오류 감지 → [Reflect] 재쿼리→전송"] }
+        ]},
+        { "name": "★ 에이전트 루프 5단계 (Closed Loop)", "children": [
+          { "name": "① Perceive", "children": [
+            { "name": "하는 일", "children": ["환경 관찰·상태 파악"] },
+            { "name": "언어의 역할", "children": ["센서 데이터를 자연어 설명으로 변환"] }
+          ]},
+          { "name": "② Plan", "children": [
+            { "name": "하는 일", "children": ["목표 분해·단계 설계"] },
+            { "name": "언어의 역할", "children": ["자연어로 목표를 단계로 분해"] }
+          ]},
+          { "name": "③ Act", "children": [
+            { "name": "하는 일", "children": ["도구 호출·행동 실행"] },
+            { "name": "언어의 역할", "children": ["자연어로 API·도구 호출"] }
+          ]},
+          { "name": "④ Observe", "children": [
+            { "name": "하는 일", "children": ["결과 수집·피드백 처리"] },
+            { "name": "언어의 역할", "children": ["결과를 자연어 맥락으로 통합"] }
+          ]},
+          { "name": "⑤ Reflect", "children": [
+            { "name": "하는 일", "children": ["평가·학습·재계획"] },
+            { "name": "언어의 역할", "children": ["자연어로 자기 평가 및 재계획"] }
+          ]},
+          { "name": "★ 루프는 어떻게 반복되나?", "children": ["Reflect 이후 → 다시 Perceive로 돌아가는 닫힌 루프 반복 (환경 변화/실패 시 자동 재계획)"] }
+        ]},
+        { "name": "★ 에이전트에서 NLP의 4가지 역할 (표)", "children": [
+          { "name": "① PLANNING (목표 분해·추론)", "children": [
+            { "name": "대응 단계", "children": ["Plan"] },
+            { "name": "내용", "children": ["복잡 목표를 실행 가능 하위 단계로 분해. 불확실성('아마도')·조건('만약')·우선순위('먼저')를 자연어로 표현"] },
+            { "name": "다음 강의", "children": ["Chain-of-Thought, Tree-of-Thought"] }
+          ]},
+          { "name": "② TOOL USE (도구 호출)", "children": [
+            { "name": "대응 단계", "children": ["Act"] },
+            { "name": "내용", "children": ["언어로 API·DB·코드 실행기·웹 검색 호출. 언제 쓸지 판단, 결과 신뢰성 평가, 여러 도구 순서 조율"] },
+            { "name": "다음 강의", "children": ["ReAct Framework"] }
+          ]},
+          { "name": "③ MEMORY (저장·검색)", "children": [
+            { "name": "대응 단계", "children": ["Perceive"] },
+            { "name": "내용 — 세 층위는?", "children": ["에피소딕(대화기록)·의미적(도메인 지식, RAG)·절차적(학습 스킬) 세 층위를 언어로 관리. 무엇을 언제 기억·망각할지 결정"] }
+          ]},
+          { "name": "④ COMMUNICATION (에이전트 간 통신)", "children": [
+            { "name": "대응 단계", "children": ["Multi-agent"] },
+            { "name": "내용", "children": ["언어 = 통신 프로토콜. 오케스트레이터가 하위 에이전트에 자연어로 위임·보고. 의미 일관성 문제 발생"] },
+            { "name": "다음 강의", "children": ["Multi-agent"] }
+          ]}
+        ]}
+      ]
+    },
+    {
+      "name": "9. ★ Physical AI vs Agentic AI (빈출 비교 표)",
+      "children": [
+        { "name": "행동 공간", "children": ["Physical = 물리적 (모터 명령, 관절 각도) / Agentic = 디지털 (API 호출, 코드 실행)"] },
+        { "name": "피드백 latency", "children": ["Physical = 밀리초–초 (실시간 센서) / Agentic = 초–분 (API 응답, 검색 결과)"] },
+        { "name": "오류 비용", "children": ["Physical = 물리적 피해 가능 (Safety Critical) / Agentic = 잘못된 정보·비용 낭비 (복구 가능)"] },
+        { "name": "Grounding 대상", "children": ["Physical = 3D 공간·물리 법칙·물체 속성 / Agentic = 사용자 의도·도메인 지식·API 스펙"] },
+        { "name": "★ 언어의 역할", "children": ["Physical = 행동의 인터페이스 (외부 경계) / Agentic = 사고의 매체 (내부 표현)"] },
+        { "name": "공통점은?", "children": ["자연어 명령의 모호성 처리 · Long-horizon 계획 · 실패 복구 (양쪽 공통)"] },
+        { "name": "융합의 최전선 — Embodied Agent란?", "children": ["'냉장고에 파스타 재료 있는지 확인하고 없으면 주문해줘' → Physical AI(냉장고 열기·시각 인식) + Agentic AI(인식 결과 해석·쇼핑 API 호출)를 하나의 루프에서 결합"] }
+      ]
+    },
+    {
+      "name": "10. 두 세계를 관통하는 3가지 미해결 NLP 과제",
+      "children": [
+        { "name": "① Grounding의 근본 한계", "children": ["물리 세계를 직접 경험하지 않은 모델이 '무겁다·뜨겁다·미끄럽다'를 진정 이해할 수 있는가? → 더 많은 데이터로 극복 가능한가, 구조적 한계인가?"] },
+        { "name": "② Long-horizon 일관성", "children": ["수십 단계 작업에서 초기 목표를 유지하는가? Goal Drift(중간 정보가 원래 의도를 희석) — 현재 LLM의 컨텍스트 윈도우 한계와 직결"] },
+        { "name": "③ Safety & 책임 귀속", "children": ["자연어로 위임한 행동이 피해를 일으켰을 때 책임은 사용자·오케스트레이터·하위 에이전트 중 누구? → 현재 법적·기술적 프레임워크 부재"] }
+      ]
+    },
+    {
+      "name": "★ 시험 포인트 / 자주 헷갈리는 점",
+      "children": [
+        { "name": "Symbol Grounding Problem = 누구?", "children": ["하나드(Harnad, 1990). '중국어 사전만으로 중국어 배우기' 비유 / 해결책 = 아이코닉 표현 + 카테고리적 표현(상향식 감각 + 하향식 기호 결합)"] },
+        { "name": "Grounding 4단계 난이도 순서", "children": ["언어적(해결) → 시각적(진전, CLIP/Flamingo) → 공간적(가장 어려움, 미해결) → 행동적(미해결). RLHF instruction following은 언어적 grounding까지만"] },
+        { "name": "SayCan 공식", "children": ["P(task) = P(say)×P(can). P(say)=LLM 의미 적절성, P(can)=Affordance(가치함수) 성공 확률. '논리적으로 적절한 것이 아니라 두 곱이 최대인 것을 선택' — paper towel(p_LLM↑)이 아니라 sponge(곱↑) 선택 사례 주의"] },
+        { "name": "세 모델 핵심 기여 구분", "children": [
+          { "name": "SayCan", "children": ["Affordance×LLM 결합, 사전 정의 스킬 선택(새 객체 일반화 X)"] },
+          { "name": "RT-2", "children": ["행동을 언어 토큰으로 직접 출력(VLA), 웹 지식 전이, Co-fine-tuning"] },
+          { "name": "PaLM-E", "children": ["인식+계획을 단일 모델로 통합, 연속 센서를 언어 공간에 투영, ViT 사용"] }
+        ]},
+        { "name": "RT-2 행동 토큰화 숫자 암기", "children": ["7차원(Δx,Δy,Δz,Δroll,Δpitch,Δyaw,gripper) + terminate → 한 step 8개 정수, 각 차원 256개 bin으로 이산화"] },
+        { "name": "RT-2의 Co-fine-tuning", "children": ["웹 데이터 + 로봇 데이터 동시 학습이 핵심(상식 전이의 비결). '멸종 동물/도도새 인형' 예시"] },
+        { "name": "PaLM-E의 'catastrophic forgetting 없음'", "children": ["로봇 제어 학습이 언어 이해를 저해하지 않고 오히려 VQA 향상(Positive Transfer)"] },
+        { "name": "Physical AI 3대 핵심 문제", "children": ["Spatial Grounding · 불확실성 처리 · 실시간 피드백 통합"] },
+        { "name": "Physical AI 공통 한계 3가지", "children": ["Grounding Gap · Cascading Error · Open-Loop 취약성 → Agentic의 Closed Loop가 해결 방향"] },
+        { "name": "에이전트 루프 5단계 순서", "children": ["Perceive → Plan → Act → Observe → Reflect → (다시 Perceive). 닫힌 루프"] },
+        { "name": "NLP의 4가지 역할", "children": ["Planning(CoT/ToT) · Tool Use(ReAct) · Memory(에피소딕/의미적-RAG/절차적) · Communication(멀티에이전트). 각 역할과 대응 에이전트 루프 단계·다음 강의 주제 매칭"] },
+        { "name": "Physical vs Agentic 핵심 대비", "children": ["행동 공간(물리 vs 디지털), latency(ms–초 vs 초–분), 오류 비용(Safety Critical vs 복구 가능), 언어 역할(행동 인터페이스=외부 경계 vs 사고 매체=내부 표현)"] },
+        { "name": "Grice 격률 4가지 + HRI", "children": ["양·질·관계·방식. HRI 모호성 해소 — 함축(implicature) 처리"] },
+        { "name": "자율주행 3층위 + 미해결 3과제", "children": ["데이터 합성(CARLA/nuPlan) / Scene Description+CoT / 운전자 인터페이스. 미해결: Grounding 한계 · Long-horizon(Goal Drift) · Safety 책임 귀속"] }
+      ]
+    }
+  ]
+}
