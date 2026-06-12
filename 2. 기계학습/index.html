@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>빅데이터 자연어처리 · 학습맵</title>
+<title>학습맵</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
@@ -22,7 +22,7 @@
 <body class="bg-ink text-gray-100 antialiased" style="font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif">
 
 <header class="sticky top-0 z-10 bg-ink/95 backdrop-blur border-b border-line px-5 py-3 flex flex-wrap items-center gap-3">
-  <h1 class="text-base font-bold text-white">🧠 빅데이터 자연어처리 · 학습맵</h1>
+  <h1 id="pageTitle" class="text-base font-bold text-white">학습맵</h1>
   <span id="status" class="text-xs text-gray-500"></span>
   <div class="ml-auto flex items-center gap-2">
     <input id="search" placeholder="검색 (노드 펼침·강조)"
@@ -128,6 +128,9 @@ async function load(){
     const base = "study-data/";
     const manifest = await (await fetch(base+"manifest.json")).json();
     document.getElementById("rootLabel").textContent = manifest.subject || "학습맵";
+    const _pageTitle = (manifest.subject || "학습맵") + " · 학습맵";
+    document.getElementById("pageTitle").textContent = (manifest.emoji || "📚") + " " + _pageTitle;
+    document.title = _pageTitle;
     const lectures = await Promise.all(
       manifest.lectures.map(f => fetch(base+f).then(r=>r.json()))
     );

@@ -1,5 +1,6 @@
 {
   "subject": "빅데이터 자연어처리",
+  "emoji": "🧠",
   "lectures": [
     "07_LoRA.json",
     "09_PhysicalAI.json",

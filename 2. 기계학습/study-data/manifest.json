@@ -1,5 +1,6 @@
 {
   "subject": "기계학습",
+  "emoji": "📈",
   "lectures": [
     "00_exam_strategy.json",
     "09_Density_Estimation.json",

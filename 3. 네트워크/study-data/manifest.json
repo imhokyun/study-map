@@ -1,5 +1,6 @@
 {
   "subject": "네트워크",
+  "emoji": "🌐",
   "lectures": [
     "01_Ch1_Introduction.json",
     "02_Ch2_Application.json",
