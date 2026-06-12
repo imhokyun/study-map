@@ -1,0 +1,359 @@
+{
+  "id": "04_Ch4_DataPlane",
+  "title": "4장 · 네트워크 계층: 데이터 평면 (IP·포워딩)",
+  "nodes": [
+    {
+      "name": "이 챕터의 대표 핵심 3가지 (교수가 \"제일 중요\")",
+      "children": [
+        { "name": "① Longest Prefix Matching (LPM)", "children": ["교수가 강의 중 직접 비트열 매칭 예제를 풀어 보임 — \"한번 풀어봐라, 이렇게 문제가 나왔잖아요\". 데이터평면 대표 문제"] },
+        { "name": "② IP 데이터그램 헤더에서 제일 중요한 필드는?", "children": ["목적지 주소(Destination IP) — 라우팅·포워딩은 오직 destination IP 기준(전통적 destination-based forwarding)"] },
+        { "name": "③ IP 주소 = 인터페이스 32비트 + 계층구조", "children": ["네트워크/서브넷/호스트 계층구조, CIDR a.b.c.d/x 표기, DHCP·NAT까지 한 줄기로 연결. 교수가 가장 많은 시간을 쓴 부분"] }
+      ]
+    },
+    {
+      "name": "routing vs forwarding / control plane vs data plane ★★",
+      "children": [
+        { "name": "forwarding이란?", "children": ["한 라우터 안에서 입력→출력으로 패킷 전달 = '길을 사용'. local, per-router 국소 동작"] },
+        { "name": "routing이란?", "children": ["출발지→목적지 전체 경로 계산 = '길을 계산'. network-wide, 여러 라우터에 걸침"] },
+        { "name": "forwarding은 어느 평면?", "children": ["Data plane — 하드웨어, 나노초(ns) 단위"] },
+        { "name": "routing은 어느 평면?", "children": ["Control plane — 소프트웨어, 밀리초(ms) 단위"] },
+        { "name": "★ 시간 척도 매칭(시험)", "children": ["data plane = HW ns / control plane = SW ms — 꼭 구분"] },
+        { "name": "교수 강조 한 줄", "children": ["\"IP는 길을 계산하지 않는다. 이미 계산된 라우팅 테이블을 사용할 뿐\""] },
+        { "name": "그럼 길 계산은 누가?", "children": ["라우팅 프로토콜 OSPF(망 내부)·BGP(망 단위) 또는 SDN 중앙 컨트롤러의 몫"] },
+        { "name": "control plane 두 접근", "children": [
+          "전통적 라우팅 알고리즘 — 각 라우터에 분산 구현",
+          "SDN — 원격 서버가 중앙에서 포워딩 테이블 계산 후 라우터에 설치"
+        ]},
+        { "name": "라우팅 테이블은 누가 보유?", "children": ["모든 호스트·모든 라우터가 빠짐없이 보유(없으면 데이터그램 못 보냄). route print로 실제 확인"] }
+      ]
+    },
+    {
+      "name": "라우터 내부 구조 ★ (보조)",
+      "children": [
+        { "name": "라우터란 본래?", "children": ["패킷 포워딩 전용으로 프로그램된 특수 컴퓨터. ARPANET 시절 IMP라는 전용 기계 사용"] },
+        { "name": "전체 구조 한 줄", "children": ["Input ports → Switching fabric → Output ports / 상단 routing=control plane(SW,ms), 하단 forwarding=data plane(HW,ns)"] },
+        { "name": "입력포트(input port) 4단계 기능", "children": [
+          { "name": "① line termination", "children": ["물리계층 — 선으로 들어온 신호(아날로그/디지털)를 비트로 해석"] },
+          { "name": "② link-layer 처리", "children": ["비트들을 프레임으로 묶고 열어서 목적지 주소 확인"] },
+          { "name": "③ lookup·forwarding (decentralized switching)", "children": ["입력포트 메모리의 forwarding table 조회해 출력포트 결정 = match plus action"] },
+          { "name": "④ queueing", "children": ["패브릭 입장 전 프레임 대기. 도착이 랜덤이라 평균 큐 길이>0 → 버퍼 필요"] }
+        ]},
+        { "name": "decentralized switching = ?", "children": ["match plus action — 헤더 필드값으로 forwarding table 조회해 출력포트 결정"] },
+        { "name": "destination-based forwarding", "children": ["전통적 — 목적지 IP 주소 하나만 보고 결정"] },
+        { "name": "스위칭 패브릭(switching fabric)이란?", "children": ["입력↔출력을 잇는 복잡한 교차로. 길이 씨줄·날줄처럼 얽혀 fabric(직물)이라 부름"] },
+        { "name": "스위칭 패브릭 3종", "children": [
+          { "name": "① Memory (1세대)", "children": ["CPU 제어로 패킷을 시스템 메모리에 복사. 메모리 대역폭 한계(datagram당 버스 2회 횡단)"] },
+          { "name": "② Bus", "children": ["공유 버스로 입력→출력. 한 순간 하나만 사용(직렬) → 버스 대역폭이 병목"] },
+          { "name": "③ Interconnection (crossbar/Clos)", "children": ["병렬 구조로 병목 해소. 고정길이 cell로 쪼개 통과 후 재조립. 전화망 유래, 현재 가장 인기(수백 Tbps Cisco CRS)"] }
+        ]},
+        { "name": "스위칭 레이트(switching rate)란?", "children": ["입력→출력으로 단위시간당 옮기는 패킷 수. N개 입력 → 이상적으론 N×line rate"] },
+        { "name": "입력 큐잉 & HOL blocking", "children": [
+          { "name": "입력 큐잉은 언제?", "children": ["패브릭이 입력포트 합보다 느릴 때 발생"] },
+          { "name": "HOL(Head-of-Line) blocking이란?", "children": ["입력 큐 맨 앞 패킷이 막히면, 뒤 패킷들이 (다른 출력으로 갈 수 있어도) 줄줄이 대기"] },
+          { "name": "★ HOL blocking의 영향?", "children": ["입력포트 현상 — 단, 입력 큐 대기는 빈발하지 않고 영향 미미"] }
+        ]},
+        { "name": "출력 큐잉 — 지연·손실의 주범", "children": [
+          { "name": "출력 버퍼링은 언제?", "children": ["패브릭 도착률 > 출력 링크 전송률일 때. 같은 출력으로 몰리면 줄이 길어짐"] },
+          { "name": "★ 패킷 손실의 거의 전부는?", "children": ["출력 큐가 가득 차서 발생(장비 고장 아님). 큐잉 지연의 대부분도 출력포트"] }
+        ]}
+      ]
+    },
+    {
+      "name": "버퍼 관리 & 패킷 스케줄링 ★ (보조)",
+      "children": [
+        { "name": "버퍼량 결정 — 얼마나 둘 것인가?", "children": [
+          { "name": "고전 가이드라인 (RFC 3439)", "children": ["평균 버퍼 ≈ 전형적 RTT × 링크 용량 C"] },
+          { "name": "예시 계산", "children": ["C=10Gbps, RTT=0.25초 → 0.25×10Gb = 2.5Gbit ≈ 300MB(엄청 큼)"] },
+          { "name": "왜 RTT인가?", "children": ["라우터가 넘쳐도 신호가 목적지 갔다 송신자에게 돌아와 전송률 줄일 때까지 한 바퀴(RTT) 걸림 → 그동안 담아둬야 패킷이 안 죽음"] },
+          { "name": "스탠포드 보정(counter-intuitive)", "children": ["플로우 수 N 많을수록 필요 버퍼는 RTT×C / √N 으로 줄어듦"] },
+          { "name": "√N 보정 이유(통계적)", "children": ["각 플로우 TCP congestion control의 RTT가 제각각 → 어떤 건 브레이크, 어떤 건 액셀 → 변동성(표준편차)이 상쇄됨"] }
+        ]},
+        { "name": "Bufferbloat(버퍼 블로팅)란?", "children": ["버퍼가 크다고 좋은 게 아님 — 큐가 길면 패킷은 살지만 대기시간↑ → RTT↑ → 실시간 앱 치명적(원격 수술 비유)"] },
+        { "name": "버퍼 관리(공간) vs 스케줄링(처리) — ★구분 필수", "children": [
+          "버퍼 관리 = 공간(메모리) 관리: 어떤 패킷을 큐에 넣고/버릴까",
+          "스케줄링 = 처리 자원: 이미 큐에 든 것 중 다음에 누구를 내보낼까"
+        ]},
+        { "name": "버퍼 관리 — Drop 정책", "children": [
+          { "name": "Tail Drop(테일 드롭)", "children": ["큐가 꽉 차면 맨 뒤로 들어오려는 패킷을 버림 → ★현 인터넷의 기본"] },
+          { "name": "Priority drop", "children": ["우선순위 비트로 살릴/죽일 패킷 선택"] },
+          { "name": "Marking(마킹)", "children": ["큐가 거의 찰 때 비트 세트(0→1)로 혼잡 알림(패킷 안 죽임). ECN/RED 계열 — 실제론 잘 안 씀"] }
+        ]},
+        { "name": "패킷 스케줄링 4정책", "children": [
+          { "name": "FCFS / FIFO", "children": ["먼저 온 패킷 먼저 전송. ★현 인터넷이 실제 쓰는 것(우선순위 없음, 평등)"] },
+          { "name": "Priority(우선순위)", "children": ["큐 여러 개, 높은 큐부터 서비스, 같은 우선순위 내선 FCFS"] },
+          { "name": "★ Strict Priority의 부작용?", "children": ["Starvation(기아) — 높은 큐가 비어야만 낮은 큐 서비스 → 평민은 굶음"] },
+          { "name": "Round Robin (RR)", "children": ["큐 여러 개에서 한 패킷씩 돌아가며 전송(고스톱 패 돌리기)"] },
+          { "name": "WFQ (Weighted Fair Queueing)", "children": ["RR의 일반화. 클래스별 가중치 wᵢ로 최소 대역폭 보장, 바이트 양까지 공평. 이론적으로 완벽하나 느려서 실제 미사용"] }
+        ]},
+        { "name": "★ 시험 단골 — priority queue 도착순서 예제", "children": ["도착 순서(1=고,2=저,3=고…)가 아니라 우선순위 순으로 서비스. 교수: \"시험문제 내기 딱 좋다\""] },
+        { "name": "(사이드바) 망 중립성(Network Neutrality)", "children": ["no blocking / no throttling / no paid prioritization(2015 US FCC). Title II(규제) vs Title I(비규제) 쟁점. 시험 제외, 관심 있으면 참고"] }
+      ]
+    },
+    {
+      "name": "IP 데이터그램 헤더 — 목적지 주소가 핵심 ★★★/★★",
+      "children": [
+        { "name": "★ 포워딩은 헤더의 어느 필드 기준?", "children": ["목적지 IP 주소(Destination IP) 하나 — 전통적 destination-based forwarding. 헤더에서 가장 중요한 필드"] },
+        { "name": "헤더를 왜 읽어야 하나(직관)", "children": ["실제 패킷은 레이블 없는 비트열(0101…)로 들어옴 → 헤더 길이 등을 읽어야 경계를 앎"] },
+        { "name": "Version 필드", "children": ["4(IPv4) / 6(IPv6)"] },
+        { "name": "Header Length (4비트) — ×4 ★", "children": [
+          "헤더 경계 표시. 옵션 때문에 헤더 길이 가변 → 명시 필요",
+          { "name": "왜 ×4?", "children": ["4비트(최대 15) × 4 = 실제 바이트. 헤더 최대 60바이트(15×4)"] }
+        ]},
+        { "name": "Type of Service (ToS)", "children": ["원래 QoS용 → 현재 전용. 하위 2비트(6·7번)는 ECN(혼잡 표시)용 일부 사용"] },
+        { "name": "Total Length (16비트) — 그대로 ★", "children": [
+          "곱하기 없이 그대로의 바이트 길이. 이론 최대 2¹⁶−1 = 65,535 바이트",
+          { "name": "실제 한계는?", "children": ["2계층 프레임 MTU에 종속 → 이더넷 페이로드 최대 1500바이트가 사실상 한계"] }
+        ]},
+        { "name": "단편화(Fragmentation) 3필드 ★★", "children": [
+          { "name": "언제 단편화?", "children": ["IP 데이터그램이 MTU보다 크면 잘림. 어느 라우터에서나 발생 가능"] },
+          { "name": "① Identification(식별자)", "children": ["같은 원본에서 쪼개진 조각은 동일 ID 공유(군번줄 비유) → 재조립 시 같은 ID끼리만 합침"] },
+          { "name": "② Fragment Offset (13비트) — ÷8 ★", "children": ["이 조각이 원본에서 몇 번째 바이트부터인지를 8로 나눈 값으로 기록(첫 조각=0)"] },
+          { "name": "③ Flags — DF / MF", "children": [
+            { "name": "DF(Don't Fragment)", "children": ["쪼개지 마라. 너무 큰데 DF=1이면 라우터가 쪼개는 대신 폐기 → 송신자에게 ICMP 에러 + 문제 MTU 통보"] },
+            { "name": "MF(More Fragments)", "children": ["뒤에 조각 더 있음=1, ★마지막 조각만 MF=0"] }
+          ]},
+          { "name": "★ 재조립은 어디서?", "children": ["오직 목적지 호스트에서만. 경유 라우터는 쪼개기만 하고 절대 합치지 않음"] },
+          { "name": "라우터에게 단편화는?", "children": ["특별 처리(slow path) → 파이프라인 깨짐 → 비효율"] },
+          { "name": "Path MTU Discovery", "children": ["송신자(TCP)가 DF=1로 보내 ICMP 피드백 받아 경로 최소 MTU에 맞게 패킷 크기를 점점 줄임"] }
+        ]},
+        { "name": "TTL (Time To Live) ★★", "children": [
+          { "name": "동작", "children": ["라우터 1개 거칠 때마다 −1(decrement), 0이 되면 폐기(자폭)"] },
+          { "name": "초기값", "children": ["보통 255 / 128 / 64 (인터넷 diameter ~30보다 훨씬 큼)"] },
+          { "name": "★ TTL=0의 의미는?", "children": ["정상이면 도착했어야 함 → 라우팅 루프(OSPF 수렴 과정에서 순간 발생)에 걸렸다는 뜻. 루프 패킷 제거 목적"] },
+          { "name": "TTL을 영리하게 쓰는 도구?", "children": ["traceroute"] }
+        ]},
+        { "name": "Protocol(상위 계층 프로토콜) 번호", "children": [
+          "페이로드를 실은 상위 프로토콜 번호 → 상위계층 demux용",
+          { "name": "주요 번호(암기)", "children": ["TCP=6, UDP=17, ICMP=1, IGMP=2"] }
+        ]},
+        { "name": "Header Checksum(헤더 체크섬)", "children": ["헤더만 16비트 단위로 합산 → 보수를 기록. 수신측이 전부 더해 0이 나오면 (높은 확률로) 에러 없음(100% 보장 아님)"] },
+        { "name": "Source / Destination IP", "children": ["라우팅은 목적지(Destination) IP 기준"] },
+        { "name": "Options 필드", "children": ["거의 안 씀. 옵션 달린 패킷은 라우터가 의심·폐기(해킹에 자주 쓰여서). 예외 Router Alert 정도 — 교수: 학생은 기억할 게 없다"] },
+        { "name": "Payload", "children": ["상위 계층(TCP/UDP 등) 데이터. 앞부분에 전송 계층 헤더가 있음(생선 대가리 비유)"] },
+        { "name": "★ IPv4 기본 헤더 크기는?", "children": ["옵션 없으면 20바이트. (녹취의 '40바이트'는 IPv6 고정 헤더와 혼동 주의 — IPv6 고정=40바이트)"] }
+      ]
+    },
+    {
+      "name": "ICMP — 에러 리포팅 ★ (보조)",
+      "children": [
+        { "name": "ICMP의 주 역할", "children": ["주로 에러 리포팅. IPv4에서 시그널링은 매우 축소(ping 정도)"] },
+        { "name": "★ 보고 안 하는 에러는?", "children": ["송신자가 고칠 수 없는 에러(버퍼 넘침 등)는 보고 안 함 — 대역폭 낭비라서"] },
+        { "name": "유용한 보고 예", "children": ["TTL=0 도달, MTU 너무 큼(→ 송신자가 패킷 크기 줄일 수 있음)"] }
+      ]
+    },
+    {
+      "name": "IP 주소 = 인터페이스 32비트 + 계층구조 ★★★",
+      "children": [
+        { "name": "★ IP 주소는 무엇에 붙는가?", "children": ["인터페이스에 붙는 32비트 식별자 — 호스트당 하나가 아님!"] },
+        { "name": "인터페이스란?", "children": ["호스트/라우터와 물리 링크의 연결점. 커널 내부에서 이를 대표하는 데이터 구조, 그 안에 IP 주소 값이 들어있음"] },
+        { "name": "라우터·스마트폰 예", "children": ["라우터는 보통 인터페이스마다 다른 IP, 스마트폰도 Wi-Fi/4G/5G별로 다른 IP"] },
+        { "name": "Dotted-decimal notation(점 십진 표기)", "children": ["32비트를 8비트씩 끊어 10진수로(예: 223.1.1.1) — 사람이 외우기 쉽게"] },
+        { "name": "IP 주소의 계층 구조", "children": ["네트워크 부분(고위 비트) → 서브넷 부분 → 호스트 부분(저위 비트). 인터넷=네트워크들의 loose confederation"] },
+        { "name": "★ 인터넷 내부 라우터는 주소의 어느 부분만 보나? (편지봉투 비유)", "children": ["네트워크 부분만 보고 라우팅, 호스트 부분은 무시. 미국 우체국은 'Korea'만 보고 보냄 → 망 관문 도착 후에야 서브넷·호스트 ID 사용"] },
+        { "name": "classful 클래스 비유", "children": ["Class B는 앞 16비트=네트워크, 뒤 16비트=호스트 / Class A는 앞 8비트=네트워크, 뒤 24비트=호스트"] }
+      ]
+    },
+    {
+      "name": "서브넷 (Subnets) ★★★",
+      "children": [
+        { "name": "왜 서브넷이 필요한가?", "children": ["네트워크 안 호스트(예 2²⁴≈1700만)를 곧바로 일련번호로 찾기 막막함 → 호스트 부분 일부를 잘라 서브넷(우편 '구' 같은 계층)을 둠"] },
+        { "name": "주소 계층 구조", "children": ["네트워크 파트 → 서브넷 파트 → 호스트 파트. 관문 도착 후 호스트가 아니라 서브넷부터 찾아 들어감('성북구'부터)"] },
+        { "name": "★ 서브넷의 정의는?", "children": ["라우터를 거치지 않고 물리적으로(같은 매체 위에서) 직접 도달할 수 있는 인터페이스들의 집합"] },
+        { "name": "같은 서브넷의 특징", "children": ["주소의 네트워크+서브넷 부분이 동일, 호스트 부분만 다름(예: 223.1.1.x 공유)"] },
+        { "name": "서브넷 정의 레시피", "children": ["각 인터페이스를 떼어 고립된 '섬'을 만들면 각 섬이 하나의 서브넷"] },
+        { "name": "point-to-point 링크도 서브넷?", "children": ["맞음 — 인터페이스 2개뿐인 링크도 하나의 서브넷이 될 수 있음(shared medium뿐 아니라)"] },
+        { "name": "통상 서브넷 1개 ≈ ?", "children": ["LAN 1개(이더넷 하나, Wi-Fi망 하나). 보통 서브넷은 1단계(필요 시 다단계)"] },
+        { "name": "서브넷 마스크 /24의 의미", "children": ["앞 24비트가 네트워크+서브넷 부분, 뒤 8비트가 호스트 부분"] },
+        { "name": "★ /24 슬래시 ≠ CIDR a.b.c.d/x 슬래시 (교수 강조)", "children": ["같은 슬래시 표기지만 맥락(주제)이 다름 — 혼동 금지"] }
+      ]
+    },
+    {
+      "name": "CIDR (Classless Inter-Domain Routing) ★★★",
+      "children": [
+        { "name": "Domain이란?", "children": ["각각의 독립 네트워크/기관(고려대망, 애플망 등). Inter-domain routing은 망 사이 라우팅(=BGP, 망 내부는 OSPF)"] },
+        { "name": "과거 Classful 할당 — 위치=크기", "children": [
+          { "name": "원리", "children": ["IP 주소공간 약 40여억(2³²). 위치(앞 비트)에 따라 클래스 A/B/C/D/E로 자동 판별 → 네트워크 부분 길이 자동 결정"] },
+          { "name": "클래스 식별 비트", "children": ["A=0…, B=10…, C=110…, D=1110…, E=1111…"] },
+          { "name": "할당 단위", "children": ["A=2²⁴개(앞 8비트, ≈1700만), B=2¹⁶개(앞 16비트, ≈65,536), C=2⁸개(앞 24비트, 256개·특수 빼면 254)"] },
+          { "name": "고갈 원인(옷 사이즈 비유)", "children": ["A는 너무 큰 옷, C는 너무 작은 옷, 대부분 기관은 B가 딱 맞음 → 모두 B로 몰려 B 공간 고갈 위기"] }
+        ]},
+        { "name": "★ Classless로 전환한 이유는?", "children": ["위치와 크기의 연결을 끊음 → 이제 주소 번호만 봐선 할당 크기를 알 수 없음(고정 클래스 경계 없이 임의 길이 네트워크 부분 허용)"] },
+        { "name": "★ a.b.c.d/x 의 /x 는?", "children": ["네트워크(프리픽스) 부분의 비트 수. 8/16/24만이 아니라 13·17·11 등 임의 길이 가능"] },
+        { "name": "왜 명시해야 하나?", "children": ["라우터에 '몇 비트까지 매치할지'를 꼬리표로 명시(classful 땐 클래스만 보면 자동으로 알았음)"] },
+        { "name": "예상 출제 — /23이 무슨 뜻?", "children": ["앞 23비트=네트워크/프리픽스, 뒤 9비트=호스트=2⁹개"] },
+        { "name": "★ classful vs CIDR 차이(시험)", "children": ["classful은 클래스만 보면 prefix 길이 자동 판별 / CIDR은 prefix 길이를 명시해야 함"] }
+      ]
+    },
+    {
+      "name": "계층적 주소 할당 & Route Aggregation ★★",
+      "children": [
+        { "name": "ISP가 블록을 어떻게 배분?", "children": ["자기 블록을 쪼개 고객에게 배분. 예: ISP 블록 200.23.16.0/20 → 8개 조직에 /23씩(각 2⁹개)"] },
+        { "name": "/23의 의미", "children": ["앞 23비트 고정, 뒤 9비트 자유 → 한 조직당 2⁹개 주소"] },
+        { "name": "주소 획득 계보 ★(보조)", "children": [
+          { "name": "ICANN", "children": ["전지전능 — IP·포트·도메인 관리, 내부에 IANA 기능. DNS 루트존·TLD 위임도 관리"] },
+          { "name": "5개 RR(Regional Registry)", "children": ["ARIN(북미), RIPE NCC(유럽), APNIC(아태), LACNIC(중남미), AFRINIC(아프리카)"] },
+          { "name": "그 아래 계보", "children": ["국가 NIC(KRNIC) → ISP(KT, SK브로드밴드) → 기관/사용자"] }
+        ]},
+        { "name": "★ Route aggregation(=supernetting)이란?", "children": ["여러 고객 블록을 하나의 큰 프리픽스로 묶어 BGP 광고 → 라우팅 테이블 축소('200.23.16.0/20으로 시작하는 건 다 나에게')"] },
+        { "name": "More-specific route 시나리오", "children": ["Org 1이 ISP를 갈아타며 주소를 그대로 가져가면, 새 ISP가 더 구체적인(긴) 프리픽스 200.23.18.0/23을 따로 광고"] },
+        { "name": "그때 두 광고 매치되면?", "children": ["/20과 /23 둘 다 매치 → Longest Prefix Match로 긴 /23이 승리 → 패킷은 새 ISP로. (교수: 주소 들고 튐 시나리오는 비현실적이나 LPM 설명용 OK)"] }
+      ]
+    },
+    {
+      "name": "Longest Prefix Matching (LPM) ★★★ — 이 장의 1순위",
+      "children": [
+        { "name": "★ 정의·원리는?", "children": ["목적지 주소(32비트)를 forwarding table 각 엔트리 prefix와 앞에서부터 비교. 여러 엔트리에 매치되면 가장 긴 prefix(=더 구체적 경로)가 승자"] },
+        { "name": "왜 필요한가?", "children": ["클래스리스(CIDR)로 prefix 길이가 8/16/24를 넘어 임의 길이가 되면서 한 주소가 여러 엔트리에 동시 매치될 수 있음"] },
+        { "name": "와일드카드(*)는?", "children": ["구체적이지 못하므로 0/1 매치에 패배"] },
+        { "name": "default entry란?", "children": ["0.0.0.0 + 마스크 전부 0 → 패킷 주소와 AND하면 무조건 0 → 항상 매치. 단 가장 짧아 다른 게 있으면 짐"] },
+        { "name": "복숭아 비유 — 코어 vs 외곽", "children": ["코어 라우터(딱딱한 씨)는 엔트리 100만+ , 바깥쪽·디폴트 라우터는 수십 개 + default entry 하나"] },
+        { "name": "★ 비트열 매칭 예제(교재·교수 직접 풀이)", "children": [
+          { "name": "forwarding table", "children": [
+            { "name": "11001000 00010111 00010***  → if 0", "children": ["앞 19비트 정도 매치(00010까지)"] },
+            { "name": "11001000 00010111 00011000  → if 1", "children": ["앞 24비트 매치(가장 긴 매치)"] },
+            { "name": "11001000 00010111 00011***  → if 2", "children": ["앞 21비트 정도 매치(00011까지)"] },
+            { "name": "otherwise(0.0.0.0, 마스크 0) → if 3", "children": ["default, 항상 매치하나 가장 짧음"] }
+          ]},
+          { "name": "Q. 목적지 11001000 00010111 00011000 10101010 → ?", "children": ["…00011000까지 일치 → if 1과 if 2 둘 다 매치 → 가장 긴 if 1 선택 → 답: if 1"] },
+          { "name": "변형. …00010110… 주소면?", "children": ["if 0만 매치 → 답: if 0"] }
+        ]},
+        { "name": "★ 오답 포인트", "children": [
+          "짧은 prefix(if 2)나 default(if 3)도 매치되지만 더 긴 쪽이 무조건 승리(더 구체적 경로)",
+          "숫자가 달라 보여도 앞 N비트만 같으면 매치(예: /20이면 뒤 12비트 달라도 매치)"
+        ]},
+        { "name": "하드웨어 구현 — TCAM ★", "children": [
+          { "name": "TCAM이란?", "children": ["Ternary Content Addressable Memory — 0/1/와일드카드 3값 저장 메모리"] },
+          { "name": "★ TCAM의 장점?", "children": ["주소를 제시하면 테이블 크기와 무관하게 1 클록 사이클에 매치 검색(content-addressable). Cisco Catalyst ~100만 엔트리"] },
+          { "name": "단점", "children": ["비쌈 → 대부분은 더 싼 메모리+하드웨어 가속, 일부 고가 라우터만 TCAM"] }
+        ]}
+      ]
+    },
+    {
+      "name": "DHCP (Dynamic Host Configuration Protocol) ★★★",
+      "children": [
+        { "name": "★ DHCP의 목적은?", "children": ["호스트가 망에 join할 때 IP 주소를 동적으로 자동 획득(plug-and-play, 비전문가도 사용)"] },
+        { "name": "★ DHCP는 무슨 계층 프로토콜?", "children": ["응용계층 프로토콜이며 전송계층은 UDP 위에서 동작 ('전송/네트워크 계층' 아님 — 시험 함정)"] },
+        { "name": "호스트가 IP 얻는 2가지 방법", "children": ["① sysadmin 수동 입력(고정 IP, 연구실 PC) / ② DHCP 자동 획득(Wi-Fi·랩탑·스마트폰)"] },
+        { "name": "★ DHCP가 IP 외에 주는 것 3가지", "children": ["first-hop(기본 게이트웨이) 라우터 주소, DNS 서버 이름·IP, network mask (약 200개 파라미터 중 핵심)"] },
+        { "name": "★ Lease(임대) 개념 — DHCP의 핵심", "children": [
+          { "name": "★ BootP와 DHCP의 거의 유일한 차이는?", "children": ["lease(임대) 개념 — BootP엔 없음(이전엔 MAC↔IP 고정 매핑을 사람이 DB로 관리)"] },
+          { "name": "lease란?", "children": ["주소를 영구가 아니라 기간제로 임대 → 만료 시 서버(주인)에게 반환·재사용 가능"] },
+          { "name": "자동 renew는 언제?", "children": ["lease 기간 50% 경과 시 자동 재계약 → 사용자 모르게 연장돼 인터넷 안 끊김"] },
+          { "name": "lease 기간 조절", "children": ["주소 부족(C클래스 250개에 PC 700대)하면 짧게, 여유 있으면 길게(인기 도서 비유 — 인기 책일수록 대출 짧게)"] }
+        ]},
+        { "name": "★ DHCP 4단계 (순서대로 쓰세요)", "children": [
+          { "name": "① DHCP Discover", "children": ["클라이언트 broadcast(자기 LAN 한정). 출발지 IP=0.0.0.0(아직 주소 없음), 목적지=255.255.255.255(limited broadcast)"] },
+          { "name": "② DHCP Offer", "children": ["서버가 IP 주소 제안. 목적지도 broadcast(아직 클라가 자기 주소 모름+ARP 안 됨). DHCP 서버가 여럿이면 offer 여러 개 가능"] },
+          { "name": "③ DHCP Request", "children": ["클라이언트가 하나의 서버 선택, broadcast로 알림(다른 서버에도 그 주소 안 쓴다 통지)"] },
+          { "name": "④ DHCP Ack", "children": ["서버가 최종 확정. 'your IP address(yiaddr)' 필드에 할당 주소. 이 순간부터 사용 가능, lease 시작"] },
+          { "name": "★ renew 시엔?", "children": ["Discover·Offer 생략, Request·Ack 2단계만(RFC 2131: 이전 주소 재사용 시 앞 2단계 skip)"] }
+        ]},
+        { "name": "★ 왜 broadcast를 쓰나?", "children": ["아직 자기 주소가 없고 ARP도 불가하기 때문"] },
+        { "name": "★ DHCP relay — 모든 LAN에 서버 필요? (틀림)", "children": [
+          { "name": "limited broadcast의 한계", "children": ["255.255.255.255는 현재 LAN을 절대 못 벗어남 → 다른 LAN 서버엔 직접 못 감"] },
+          { "name": "relay가 하는 일", "children": ["LAN의 broadcast DHCP 메시지를 유니캐스트로 실제 서버에 forward(서버가 멀어도 OK) → LAN마다 서버 불필요"] },
+          { "name": "인터넷 공유기 예", "children": ["내부엔 DHCP 서버, KT 쪽엔 DHCP 클라이언트로 동시 동작"] }
+        ]},
+        { "name": "계보", "children": ["RARP(할아버지, LAN마다 서버 필요·비쌈) → BootP(아버지) → DHCP"] }
+      ]
+    },
+    {
+      "name": "NAT (Network Address Translation) ★★★",
+      "children": [
+        { "name": "★ NAT의 개념은?", "children": ["로컬망 모든 기기가 외부엔 단 하나의 공인 IPv4 주소를 공유. IPv4 고갈을 피부로 못 느끼게 한 주역"] },
+        { "name": "★ 사설(private) 주소 3블록 (RFC 1918, 암기)", "children": [
+          { "name": "10.0.0.0/8", "children": ["A급 블록"] },
+          { "name": "172.16.0.0/12", "children": ["B급 블록"] },
+          { "name": "192.168.0.0/16", "children": ["C급 블록"] },
+          { "name": "외부에선?", "children": ["라우팅 불가('지역화폐', Martian 주소) — 외부에선 무의미"] }
+        ]},
+        { "name": "★ NAT 동작 원리", "children": [
+          { "name": "나갈 때", "children": ["(출발지 사설IP, 포트) → (NAT 공인IP, 새 포트)로 치환 후 NAT translation table에 매핑쌍 기록"] },
+          { "name": "들어올 때", "children": ["(NAT 공인IP, 새 포트) → 테이블의 원래 (사설IP, 포트)로 역치환"] },
+          { "name": "★ NAPT/PAT(현재 버전)란?", "children": ["IP뿐 아니라 포트 번호까지 활용 → 공인 주소 1개로 수만 개 내부 연결 구분(포트가 수만 개)"] }
+        ]},
+        { "name": "NAT의 장점", "children": ["공인 IP 1개만 필요 / 내부 주소·ISP 변경 시 외부 통보 불필요 / (부수) 외부에서 내부 직접 접근 불가(보안)"] },
+        { "name": "★ NAT이 비판받는 핵심 이유는?", "children": ["라우터는 원래 layer 3까지만 처리해야 하는데 NAT은 포트(layer 4)를 조작 → end-to-end argument 위반 (시험 단골)"] },
+        { "name": "NAT traversal 문제", "children": ["외부가 NAT 뒤 서버에 접속 어려움 → STUN/TURN/ICE 동원(예: FaceTime). 시그널링(VoIP)은 IP/포트가 L5 payload에 들어가 더 복잡"] },
+        { "name": "그래도 왜 쓰나?", "children": ["필요악 — 홈·기관망·4G/5G에 광범위 사용, IPv4 고갈 때문에 사라지지 않음. IPv6 보급을 늦춘 원인"] }
+      ]
+    },
+    {
+      "name": "IPv6 ★★",
+      "children": [
+        { "name": "★ IPv6의 동기는?", "children": ["① IPv4 32비트 주소 고갈(ICANN이 2011년 마지막 블록 RR에 할당) ② 라우터 처리속도 향상(고정 길이 헤더) ③ flow 단위 처리"] },
+        { "name": "★ 주소 크기는?", "children": ["128비트 — 32비트(약 40억) 대비 지수적으로 큼(4cm×4cm vs 태양계 규모 비유)"] },
+        { "name": "★ IPv6 헤더가 IPv4에서 제거한 것 3가지", "children": [
+          { "name": "① checksum 없음", "children": ["라우터 처리 속도↑"] },
+          { "name": "② fragmentation/reassembly 없음", "children": ["단편화 제거"] },
+          { "name": "③ options 없음", "children": ["상위계층 next-header로 대체"] }
+        ]},
+        { "name": "헤더 크기 & 추가 필드", "children": ["40바이트 고정. TTL→hop limit으로, flow label 추가. 필드: ver, traffic class, flow label, payload len, next hdr, hop limit, src/dst 128비트"] },
+        { "name": "★ IPv4→IPv6 전환 방식은?", "children": [
+          { "name": "왜 한 번에 못 바꾸나?", "children": ["모든 라우터 동시 업그레이드 불가 = 'no flag days'"] },
+          { "name": "Tunneling", "children": ["IPv6 datagram을 IPv4 datagram의 payload로 캡슐화('packet within a packet') → IPv4 구간 통과. 4G/5G에서 많이 사용"] }
+        ]},
+        { "name": "★ 보급이 느린 이유는?", "children": ["NAT이 IPv4 수명을 연장해 'IPv6 아니면 안 되는' 응용이 없기 때문. 128비트는 32비트의 '4배'가 아니라 2⁹⁶배(지수적)"] }
+      ]
+    },
+    {
+      "name": "Generalized Forwarding (SDN) ★★",
+      "children": [
+        { "name": "포워딩 개념의 확장", "children": ["전통 포워딩=라우팅이 채워준 정보로 next hop 전송(OSPF·BGP가 분산 계산). SDN은 중앙 컨트롤러가 forwarding table 계산·설치 → shortest-path일 필요도 없고 정책대로 경로 지정"] },
+        { "name": "★ 핵심 추상화는?", "children": ["match plus action"] },
+        { "name": "match란?", "children": ["도착 패킷의 임의 계층(link/network/transport) 헤더 필드 패턴 매치 — destination IP 하나만이 아님"] },
+        { "name": "action 종류", "children": ["forward / drop(패킷 죽이기) / modify(내용 변경) / 컨트롤러로 전송 / log"] },
+        { "name": "★ Flow table 구성요소", "children": ["Match(헤더 필드 패턴) + Action + Priority(겹치는 패턴 정리) + Counters(바이트·패킷 통계)"] },
+        { "name": "★ OpenFlow가 통합하는 장치들 (match/action 짝 암기)", "children": [
+          { "name": "Router", "children": ["match = longest dest IP prefix, action = 링크로 forward"] },
+          { "name": "Switch", "children": ["match = dest MAC, action = forward/flood"] },
+          { "name": "Firewall", "children": ["match = IP+TCP/UDP 포트, action = permit/deny"] },
+          { "name": "NAT", "children": ["match = IP+포트, action = 주소·포트 rewrite"] }
+        ]},
+        { "name": "destination-based forwarding의 위치", "children": ["generalized forwarding의 특수한 한 경우"] },
+        { "name": "의미", "children": ["여러 스위치의 flow table을 조율하면 네트워크 전역 동작을 '프로그래밍' 가능(network programmability)"] }
+      ]
+    },
+    {
+      "name": "✂️ 교수가 시험에서 제외/스킵 명시",
+      "children": [
+        "스위칭 패브릭 1세대 역사(memory 방식): \"옛날 얘기, 넘어갈게요\"",
+        "IP 옵션 필드: \"기억할 게 없어요, 하나 정도(Router Alert)\"",
+        "WFQ/Priority 복잡한 스케줄링 세부 구현: \"결론은 안 쓴다\" (단 priority queue 도착순서 예제는 원리만 알 것)",
+        "multi-stage switch blocking 세부: 깊게 안 다룸",
+        "IPv6 상세 / Generalized Forwarding(SDN) 세부: 개념(왜 IPv6, match+action)만 — 세부 필드 암기 X",
+        "미들박스(Middlebox): 시험 제외(\"관심 있으면 읽어보세요\")",
+        "망 중립성(Network Neutrality): 사이드바·철학적 주제로만 소개"
+      ]
+    },
+    {
+      "name": "★ 시험 포인트 / 자주 헷갈리는 점",
+      "children": [
+        { "name": "LPM 한 줄", "children": ["여러 엔트리 매치 시 가장 긴 prefix 승리(더 구체적 경로). default는 마스크 전부 0이라 항상 매치하나 가장 짧음"] },
+        { "name": "비트열 매칭 풀이", "children": ["앞에서부터 비교 → 가장 긴 매치 선택. 와일드카드(*)는 0/1에 패배. 교수 직접 풀이 유형"] },
+        { "name": "CIDR /x 의미", "children": ["네트워크(프리픽스) 비트 수. classful은 prefix 길이 자동, CIDR은 명시 필요. /24 서브넷마스크 슬래시 ≠ CIDR 슬래시"] },
+        { "name": "forwarding vs routing", "children": ["forwarding=길 사용(data plane, HW, ns) / routing=길 계산(control plane, SW, ms)"] },
+        { "name": "포워딩 기준 필드", "children": ["목적지 IP 주소 하나(destination-based forwarding)"] },
+        { "name": "TTL=0 의미", "children": ["폐기. 정상이면 도착했어야 함 → 보통 라우팅 루프(OSPF 수렴 중 순간 발생)"] },
+        { "name": "단편화 재조립 위치", "children": ["오직 목적지 호스트에서만. 경유 라우터는 쪼개기만 함"] },
+        { "name": "헤더 ×4 / ÷8 / 그대로", "children": ["Header Length ×4 / Fragment Offset ÷8 / Total Length 그대로 (곱·나눗셈 헷갈림)"] },
+        { "name": "DF / MF", "children": ["DF=1+너무 큼 → 폐기+ICMP / MF는 마지막 조각만 0"] },
+        { "name": "IPv4 vs IPv6 헤더 크기", "children": ["IPv4 기본=20바이트(옵션 없을 때) / IPv6 고정=40바이트 (혼동 주의)"] },
+        { "name": "Protocol 번호", "children": ["TCP=6, UDP=17, ICMP=1, IGMP=2"] },
+        { "name": "IP 주소는 무엇에?", "children": ["인터페이스당(호스트당 아님). 라우터는 인터페이스마다 다른 IP"] },
+        { "name": "서브넷 정의", "children": ["라우터 안 거치고 물리적으로 직접 닿는 인터페이스 집합. point-to-point 링크도 서브넷"] },
+        { "name": "DHCP 4단계+계층", "children": ["Discover→Offer→Request→Ack / 응용계층, UDP / renew는 Request·Ack 2단계만"] },
+        { "name": "BootP vs DHCP", "children": ["거의 유일한 차이 = lease(임대) 개념"] },
+        { "name": "DHCP relay", "children": ["limited broadcast(255.255.255.255)는 LAN을 못 벗어남 → relay가 유니캐스트로 원격 서버에 전달. '모든 LAN에 서버 필요'=틀림"] },
+        { "name": "사설 주소 3블록", "children": ["10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 (외부 라우팅 불가)"] },
+        { "name": "NAT 비판 핵심", "children": ["포트(L4)를 조작 → end-to-end argument 위반. NAPT/PAT는 IP+포트로 다중화"] },
+        { "name": "IPv6 제거 필드 3 + 전환", "children": ["checksum·fragmentation·options 제거, 128비트, 전환은 tunneling"] },
+        { "name": "현 인터넷 기본값", "children": ["버퍼 관리=Tail Drop, 스케줄링=FCFS/FIFO (단순해야 고속)"] },
+        { "name": "Strict Priority 부작용", "children": ["Starvation(기아)"] },
+        { "name": "손실의 거의 전부", "children": ["출력 큐 오버플로(장비 고장 아님)"] },
+        { "name": "TCAM", "children": ["0/1/와일드카드 3값, 테이블 크기 무관 1 클록에 매치, 비쌈"] },
+        { "name": "Generalized forwarding", "children": ["match+action(임의 계층 필드+drop/forward/modify/컨트롤러 전송). OpenFlow가 router/switch/firewall/NAT 통합"] }
+      ]
+    }
+  ]
+}

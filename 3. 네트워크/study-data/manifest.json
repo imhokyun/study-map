@@ -1,0 +1,11 @@
+{
+  "subject": "네트워크",
+  "lectures": [
+    "01_Ch1_Introduction.json",
+    "02_Ch2_Application.json",
+    "03_Ch3_Transport.json",
+    "04_Ch4_DataPlane.json",
+    "05_Ch5_ControlPlane.json",
+    "06_Ch6_LinkLayer.json"
+  ]
+}

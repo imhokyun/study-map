@@ -1,0 +1,602 @@
+{
+  "id": "02_Ch2_Application",
+  "title": "2장 · 애플리케이션 계층 (HTTP·DNS·P2P)",
+  "nodes": [
+    {
+      "name": "🎯 이 장의 대표 핵심 (교수가 '제일 중요'라 한 것)",
+      "children": [
+        { "name": "①★★★ DNS가 UDP를 쓰는 3가지 경우는?", "children": [
+          "실시간(real-time) / IP 멀티캐스트(1대多) / 단순 트랜잭션(simple transaction)",
+          { "name": "왜 0순위인가?", "children": ["교수가 15회차 DNS 메시지 형식 설명 중 '이거 시험에 낼 거예요. 기억하세요'라고 직접 출제 예고 → 단답형 0순위"] },
+          { "name": "대전제는?", "children": ["기본은 무조건 TCP. UDP는 딱 이 3가지 예외뿐 (TCP vs UDP 선택 기준과 한 몸)"] }
+        ]},
+        { "name": "②★★★ HTTP는 stateless → 상태 유지엔 무엇을?", "children": [
+          "쿠키(cookie) — HTTP 외부의 메커니즘",
+          { "name": "왜 무상태로 설계했나?", "children": ["프로토콜 설계가 훨씬 단순해지기 때문 (stateful이면 복잡한 FSM 필요)"] },
+          { "name": "교수 비유", "children": ["문신으로 기억 남기는 영화 / 포춘쿠키 — 가장 길게 비유 들며 설명한 대표 개념"] }
+        ]},
+        { "name": "③★★★ 소켓 식별자 = 무엇 + 무엇?", "children": [
+          "IP 주소 + 포트 번호",
+          { "name": "왜 0순위인가?", "children": ["교수: '이거 분명히 기억해 놓으시기 바랍니다'라고 직접 못 박음"] },
+          { "name": "응용계층의 본질은?", "children": ["IPC(인터프로세스 커뮤니케이션, 프로세스 간 통신)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "1. 네트워크 응용의 원리",
+      "children": [
+        { "name": "응용 프로그램은 어디서 실행되나?", "children": [
+          "종단(end system)에서만 실행 — 네트워크 코어 장치용 SW는 작성할 필요 없음",
+          { "name": "코어 장치(라우터)는 무엇을 하나?", "children": ["유저 응용을 돌리지 않고 IP 패킷을 목적지로 전달만 함"] }
+        ]},
+        { "name": "★★ 인터넷 vs 전화망 (구조적 우수성)", "children": [
+          { "name": "인터넷 코어의 핵심 성질은?", "children": ["'투명한 전달매체' — 서버 IP+포트만 알면 누구나 접속, 개발 당일 바로 배포(deploy) 가능"] },
+          { "name": "전화망은 왜 진화가 느린가?", "children": ["단말(전화기)은 멍텅구리, 모든 지능·복잡도가 교환기(네트워크 내부)에 집중 → 새 서비스 배포하려면 스위치 SW를 다 뜯어고쳐야 함"] },
+          { "name": "한 줄 요약 (시험)", "children": [
+            "인터넷 = 똑똑한 edge + 투명한 core (빠른 배포)",
+            "전화망 = 멍청한 edge + 똑똑한 core (느린 진화)"
+          ]},
+          { "name": "예상 출제", "children": ["[서술] 인터넷이 빠르게 성장한 구조적 이유 / [객관식] 인터넷 vs 전화망 비교"] }
+        ]},
+        { "name": "두 가지 아키텍처 (★ 클라이언트-서버 vs P2P)", "children": [
+          { "name": "클라이언트-서버 — 서버의 조건은?", "children": [
+            "always-on, 영구 IP·고정 위치·고정 포트, 데이터센터에 위치",
+            { "name": "왜 24시간·고정 위치여야 하나?", "children": ["미장원이 매일 위치 바뀌면 서비스가 아님 — 항상 같은 곳에 있어야 함"] },
+            { "name": "클라이언트끼리 직접 통신 가능?", "children": ["불가 — 네트워크 게임도 서버를 매개로 한 간접 통신일 뿐"] }
+          ]},
+          { "name": "P2P — 무엇이 다른가?", "children": [
+            "동등한 peer끼리 직접 데이터 교환, always-on 서버 없음",
+            { "name": "★ 자기 확장성(self-scalability)이란?", "children": ["새 peer가 새 수요뿐 아니라 새 서비스 용량도 동시에 가져옴"] },
+            { "name": "완전히 서버가 없나?", "children": ["아님 — 누가 접속 중이고 무슨 chunk를 가졌는지 알려주는 디렉터리/트래커 서버 필요 (peer는 수시로 끊기고 IP가 DHCP로 바뀜)"] },
+            { "name": "예시", "children": ["BitTorrent(파일 공유), KanKan(스트리밍), Skype(VoIP)"] }
+          ]}
+        ]},
+        { "name": "★★★ 프로세스·소켓·주소지정", "children": [
+          { "name": "소켓(socket)이란?", "children": ["프로세스가 메시지를 보내고 받는 '문(door)' — 응용계층 ↔ 전송계층 사이의 표준 인터페이스(창구)"] },
+          { "name": "★ 소켓의 식별자 2가지는?", "children": [
+            "IP 주소 + 포트 번호 (교수 '꼭 기억!')",
+            { "name": "이 쌍으로 무엇이 결정되나?", "children": ["IP+포트 → 소켓 결정 → 소켓에 물린 프로세스 결정 → 그 프로세스가 데이터를 받음"] }
+          ]},
+          { "name": "IP만으로 부족한 이유는?", "children": [
+            "한 호스트에 여러 프로세스가 있어 IP만으론 구분 불가 → IP+포트 필요",
+            { "name": "포트 예시", "children": ["HTTP 80, mail 25. 포트 = 전송계층 (디)멀티플렉싱의 키"] }
+          ]},
+          { "name": "★ 응용계층(1~5계층)의 본질은?", "children": [
+            "IPC(인터프로세스 커뮤니케이션) — 모든 계층은 결국 프로세스 간 통신을 떠받치려고 존재",
+            { "name": "프로세스란?", "children": ["'현재 수행 중인 프로그램' (예: 웹브라우저 ↔ 웹서버)"] }
+          ]},
+          { "name": "소켓 위/아래는 누가 제어?", "children": ["위쪽(응용) = 앱 개발자, 아래쪽(전송·네트워크·링크·물리) = OS"] }
+        ]},
+        { "name": "응용계층 프로토콜이 정의하는 것은?", "children": [
+          "메시지 타입(request/response), 문법(syntax), 의미(semantics), 송수신 규칙/순서",
+          { "name": "open vs proprietary", "children": ["open protocol(RFC 공개, 상호운용): HTTP·SMTP / proprietary: Skype·Zoom"] }
+        ]}
+      ]
+    },
+    {
+      "name": "2. ★★★ TCP vs UDP 선택 + DNS의 UDP 3경우 (강의 최강조)",
+      "children": [
+        { "name": "원리 — 무엇으로 고르나?", "children": [
+          "응용 요구사항(data integrity / timing / throughput / security)에 따라 TCP·UDP 중 선택",
+          { "name": "기본값은?", "children": ["TCP — 교수: '거의 모든 경우 기본으로 TCP. 나머지 바깥 경우는 전부 TCP라 생각하면 쉬워요'"] }
+        ]},
+        { "name": "★ UDP를 쓰는 딱 3가지 (꼭 외울 것)", "children": [
+          { "name": "① 실시간(real-time) 인터랙션", "children": [
+            "VoIP, Zoom 등. 패킷이 제때 딱딱 와야 하고 가끔 빵꾸나도 OK",
+            { "name": "왜 TCP 부적합?", "children": ["TCP는 손실 복구·가감속(브레이크·액셀)하느라 시간 끌어 부적합"] }
+          ]},
+          { "name": "② IP 멀티캐스트(1대多)", "children": [
+            "IPTV ('가장 강력한 예')",
+            { "name": "왜 TCP 부적합?", "children": ["TCP는 철저히 1대1이라 1대多 순간 탈락"] }
+          ]},
+          { "name": "③ 단순 트랜잭션(simple transaction)", "children": [
+            "패킷 1개짜리 질문 + 패킷 1개짜리 응답. DNS가 대표 예",
+            { "name": "왜 TCP 부적합?", "children": ["TCP의 connection setup/teardown 오버헤드가 배보다 배꼽"] }
+          ]}
+        ]},
+        { "name": "★ 교수 출제 예고", "children": ["15회차: 'DNS가 UDP를 쓰는 케이스 세 가지... 이거 시험에 낼 거예요. 기억하세요.' → DNS는 ③번 사례"] },
+        { "name": "UDP의 부작용(DNS에서)은?", "children": [
+          "IP는 out-of-order delivery(순서 보장 X) → 질의 3개 연달아 쏘면 응답 순서가 뒤섞일 수 있음",
+          { "name": "해결책은?", "children": ["질의마다 유니크 id 부여 → 응답이 같은 id를 echo → 매칭 (TCP는 in-order delivery라 자동 정렬, UDP는 직접 처리)"] }
+        ]},
+        { "name": "TCP가 보장/미보장하는 것", "children": [
+          { "name": "보장하는 것", "children": ["신뢰성, flow control(흐름제어), congestion control(혼잡제어), 연결설정, in-order delivery"] },
+          { "name": "보장 안 하는 것", "children": ["timing(타이밍), 최소 throughput(처리량), security(보안)"] }
+        ]},
+        { "name": "전송 서비스 요구 4요소는?", "children": [
+          { "name": "data integrity(무결성)", "children": ["은행 송금은 100% 신뢰 필요, 오디오/비디오는 약간 손실 허용"] },
+          { "name": "timing(지연)", "children": ["실시간 응용은 낮은 지연 필요"] },
+          { "name": "throughput(처리량)", "children": ["파일 다운로드는 다다익선(elastic), 오디오/비디오는 일정량 이상이면 불필요"] },
+          { "name": "security(보안)", "children": ["암호화·인증 등"] }
+        ]},
+        { "name": "★ 헷갈림 포인트", "children": [
+          { "name": "VoIP(인터넷 전화)는 UDP? TCP?", "children": ["둘 다 — 시그널링(전화 걸기/받기 신호)은 손실되면 안 되므로 TCP, 음성 전달은 UDP"] },
+          { "name": "게임은 UDP? TCP?", "children": ["대부분 TCP (TCP가 빠르게 복구한다고 봄, WoW 등 한두 게임만 UDP). 최근 영상회의·줌강의 늘며 UDP 증가"] },
+          { "name": "DNS TTL과 IP TTL은?", "children": ["서로 다름 — 혼동 금지 (아래 DNS 캐싱 참조)"] }
+        ]},
+        { "name": "TLS는 어디에 구현되나?", "children": [
+          "응용계층에 구현(TLS 라이브러리가 TCP를 사용) — 암호화된 TCP 연결, 무결성, 종단 인증 제공",
+          { "name": "왜 필요?", "children": ["vanilla TCP/UDP는 암호화 없음 → 평문 비밀번호가 그대로 인터넷 통과. 자세한 건 Ch8"] }
+        ]},
+        { "name": "예상 출제", "children": [
+          "[단답] 'DNS가 UDP를 사용하는 세 가지 경우를 쓰세요' — 최우선",
+          "[단답] 'UDP가 적합한 응용 3가지?' / [객관식] '다음 중 UDP가 적합한 응용은?'"
+        ]}
+      ]
+    },
+    {
+      "name": "3. Web과 HTTP",
+      "children": [
+        { "name": "웹 객체와 URL", "children": [
+          { "name": "웹페이지의 구성은?", "children": ["base HTML 파일 + 여러 객체(object)들. 객체 = HTML, JPEG, 오디오 등 각각 URL로 주소지정"] },
+          { "name": "하이퍼링크란?", "children": ["객체끼리 거는 링크, URL 형태로 주어짐. URL은 URI의 일종"] }
+        ]},
+        { "name": "HTTP 개요", "children": [
+          { "name": "HTTP는 무엇?", "children": ["HyperText Transfer Protocol, 웹의 응용계층 프로토콜, 클라이언트(브라우저)/서버 모델"] },
+          { "name": "어떤 전송 프로토콜·포트?", "children": ["TCP, 포트 80. ① 클라 TCP 연결 개시 → ② 서버 수락 → ③ HTTP 메시지 교환 → ④ TCP 연결 종료"] }
+        ]},
+        { "name": "★★★ HTTP는 stateless(무상태)", "children": [
+          { "name": "stateless란?", "children": ["서버가 과거 클라이언트 요청을 기억하지 않음 — 모든 요청이 독립적. 교수: '스테이트는 다시 말하면 기억이에요'"] },
+          { "name": "왜 무상태로 설계했나?", "children": ["프로토콜 설계가 훨씬 단순해지기 때문. stateful이면 '중간에 끊기면 기억 어떻게 복구?'를 복잡한 FSM(유한상태기계)로 다뤄야 함"] },
+          { "name": "기억이 필요한 기능은?", "children": ["장바구니 등 — HTTP 외부의 메커니즘 = 쿠키로 보완"] }
+        ]},
+        { "name": "★★ Non-persistent vs Persistent HTTP", "children": [
+          { "name": "Non-persistent(1.0)란?", "children": [
+            "TCP 연결 1개당 객체 1개만 전송 후 종료. 객체 N개 → 연결 N번",
+            { "name": "비유", "children": ["올 때마다 전화 걸어 '고기 사와' 끊고 다시 '상추 사와' 끊고… 포털 객체 300~400개 → 연결 수백 번 = 미친 짓"] },
+            { "name": "★ 객체당 응답시간은?", "children": ["2 RTT + 파일 전송시간 (1 RTT: TCP 연결, 1 RTT: 요청+응답 시작)"] }
+          ]},
+          { "name": "Persistent(1.1)란?", "children": [
+            "연결 1개 열어두고 여러 객체를 그 연결로 전송(재활용)",
+            { "name": "비유", "children": ["전화 한 통에 '고기·상추·젓가락·휴지 다 사와'"] },
+            { "name": "제약은?", "children": ["객체들이 같은 서버에 있을 때만. 서버가 다르면 별도 TCP 연결 필요"] },
+            { "name": "응답시간은?", "children": ["모든 참조 객체에 대해 최소 1 RTT까지 단축(응답시간 절반)"] }
+          ]},
+          { "name": "RTT란?", "children": ["작은 패킷이 클라이언트→서버→클라이언트로 왕복하는 시간"] },
+          { "name": "예상 출제", "children": ["[객관식/계산] non-persistent 객체당 응답시간? → 2RTT + 전송시간"] }
+        ]},
+        { "name": "HTTP 메시지 형식", "children": [
+          { "name": "두 종류는?", "children": ["request / response, 모두 ASCII(human-readable, human-debuggable)"] },
+          { "name": "Request 메시지 구조", "children": [
+            { "name": "request line", "children": ["메서드 SP URL SP 버전 CRLF (예: GET /index.html HTTP/1.1)"] },
+            { "name": "header lines", "children": ["필드명: 값 쌍 (예: Host:, User-Agent:, Connection:)"] },
+            { "name": "body(entity body)", "children": ["빈 줄(CRLF) 후 본문. GET은 body 없음(받아오라는 요청이므로)"] },
+            { "name": "CRLF란?", "children": ["Carriage Return + Line Feed = 리턴키 (옛날 타자기 롤러 동작에서 유래)"] }
+          ]},
+          { "name": "HTTP 메시지 구조는 무엇과 닮았나?", "children": ["SMTP(이메일) 메시지 구조(헤더+빈 줄+바디)를 거의 복붙한 것"] }
+        ]},
+        { "name": "HTTP 메서드", "children": [
+          { "name": "GET", "children": ["객체 요청, body 없음. 서버에 데이터 보낼 땐 URL ? 뒤에 (.../animalsearch?monkeys&banana)"] },
+          { "name": "POST", "children": ["폼 입력 등을 entity body에 담아 전송. ★ 같은 내용도 매번 새 객체 생성(중복 게시 가능)"] },
+          { "name": "HEAD", "children": ["GET과 같되 헤더만 반환(데이터 제외)"] },
+          { "name": "PUT", "children": ["새 파일 업로드. ★ 같은 URL이면 기존 파일 완전 대체(POST와 달리 새 객체 안 생김)"] },
+          { "name": "★ POST vs PUT 헷갈림", "children": ["POST = 중복 게시(새 객체) / PUT = 같은 URL 덮어쓰기(대체)"] }
+        ]},
+        { "name": "HTTP 상태코드 (시험)", "children": [
+          { "name": "200 OK", "children": ["성공 (2xx = 성공)"] },
+          { "name": "301 Moved Permanently", "children": ["영구 이동 (Location: 필드에 새 위치). 3xx = 리다이렉트"] },
+          { "name": "400 Bad Request", "children": ["서버가 요청 이해 못함. 4xx = 클라이언트 오류"] },
+          { "name": "404 Not Found", "children": ["문서 없음"] },
+          { "name": "505 HTTP Version Not Supported", "children": ["5xx = 서버 오류"] }
+        ]},
+        { "name": "★★ 쿠키(Cookies) — 상태 유지", "children": [
+          { "name": "왜 쓰나?", "children": ["HTTP가 stateless이므로 상태 유지를 위해. 비유: 영화 속 '기억 못 하는 사람이 몸에 문신으로 기억 남기기'"] },
+          { "name": "★ 쿠키 4가지 구성요소 (시험)", "children": [
+            { "name": "① Set-cookie 헤더", "children": ["response 메시지의 Set-cookie 헤더 라인 (서버 → 클라이언트)"] },
+            { "name": "② cookie 헤더", "children": ["다음 request 메시지의 cookie 헤더 라인 (클라이언트 → 서버)"] },
+            { "name": "③ 쿠키 파일", "children": ["사용자 호스트의 cookie 파일 (브라우저가 도메인별로 관리)"] },
+            { "name": "④ 백엔드 데이터베이스", "children": ["웹사이트의 백엔드 DB"] }
+          ]},
+          { "name": "동작은?", "children": ["첫 방문 시 서버가 고유 ID(쿠키) 생성 + DB에 항목 생성 → 이후 요청에 쿠키 ID가 실려 사이트가 사용자를 식별"] },
+          { "name": "★ 쿠키는 메모리인가?", "children": ["아님 — 작은 데이터/토큰(징표·열쇠). 포춘쿠키 속 쪽지에서 유래(오레오 아님)"] },
+          { "name": "도메인별 저장의 의미는?", "children": ["접속 도메인과 매칭되는 쿠키만 request에 제시 (eBay 쿠키는 Amazon 접속 땐 제출 안 됨)"] },
+          { "name": "★ 프라이버시 문제", "children": [
+            "3자 쿠키(tracking cookie)로 여러 사이트 방문 이력 추적 → 유럽 GDPR로 쿠키 동의 팝업 의무화",
+            { "name": "Apple vs Google", "children": ["Apple은 추적쿠키 안 씀(광고회사 아님, HW·서비스 회사라 가능) / Google은 광고회사라 결국 3자 쿠키 유지"] }
+          ]},
+          { "name": "예상 출제", "children": ["[단답] HTTP가 stateless인데 상태 유지 메커니즘은? → 쿠키 / [객관식] 쿠키 4요소"] }
+        ]},
+        { "name": "★ 웹 캐시(Web Cache / Proxy)", "children": [
+          { "name": "목적은?", "children": ["origin 서버 대신 클라이언트 근처의 중간 캐시가 요청 처리"] },
+          { "name": "동작은?", "children": ["캐시에 있으면 반환, 없으면 캐시가 origin에서 가져와 사본 저장 후 반환"] },
+          { "name": "★ 캐시의 정체는?", "children": ["client이자 server (요청 클라이언트엔 서버, origin엔 클라이언트)"] },
+          { "name": "이점 3가지는?", "children": [
+            "① 응답시간 단축(캐시가 가까움)",
+            "② origin 접근 링크 트래픽 감소(태평양 건너는 회선 아낌)",
+            "③ 가난한 콘텐츠 제공자도 효과적 배포"
+          ]},
+          { "name": "coherence란?", "children": ["원본 변경 시 무효화 — 이것만 지키면 사본을 마음껏 써도 됨"] },
+          { "name": "성능 계산 예 (시험 주의)", "children": [
+            "시나리오: 접근링크 1.54Mbps, RTT 2초, 객체 100Kb, 요청률 15/s",
+            { "name": "캐시 없을 때", "children": ["접근링크 이용률 ≈ 0.97 → 큐잉 지연 폭발(end-end ≈ 수 분)"] },
+            { "name": "두 가지 해법은?", "children": ["해법1: 더 빠른 링크 구매(비쌈) / 해법2: 웹캐시 설치(쌈) ← 더 경제적"] },
+            { "name": "적중률 0.4 가정 시", "children": ["접근링크엔 0.6 트래픽만 → 이용률 ≈ 0.58, 평균 지연 ≈ 1.2초 → 154Mbps 링크보다 낫고 저렴"] }
+          ]},
+          { "name": "요즘 웹캐시는?", "children": ["별도 웹캐시 회사 없고 CDN 회사들이 흡수 (웹캐시 ⊂ CDN)"] }
+        ]},
+        { "name": "★ Conditional GET(조건부 GET)", "children": [
+          { "name": "목적은?", "children": ["캐시에 최신 사본 있으면 객체를 다시 안 보냄 → 전송 지연·자원 절약"] },
+          { "name": "어떻게 묻나?", "children": ["request 헤더에 If-modified-since: <date> 추가 → 'origin 원본이 그 이후 바뀌었나?'를 짧게 물음"] },
+          { "name": "안 바뀜 → 응답은?", "children": ["304 Not Modified (객체 미포함) → 캐시 사본 사용"] },
+          { "name": "바뀜 → 응답은?", "children": ["200 OK + 새 데이터"] },
+          { "name": "예상 출제", "children": ["[객관식] 304의 의미 / [계산] 적중률로 접근링크 이용률·평균지연"] }
+        ]},
+        { "name": "★★ HTTP/1.1 → /2 → /3 (HOL Blocking)", "children": [
+          { "name": "HTTP/1.1의 문제는?", "children": [
+            "단일 TCP 연결, FCFS(선착순) 응답 → HOL(Head-of-Line) blocking: 작은 객체가 큰 객체 뒤에서 대기",
+            { "name": "비유", "children": ["슈퍼마켓에서 우유 1팩만 살 건데 앞사람이 물건 50개 계산 중 → 20분 대기. 큰 객체(O1)가 '거대한 똥차'"] }
+          ]},
+          { "name": "HTTP/2의 해결책은?", "children": [
+            "[RFC 7540] 객체를 프레임(frame)으로 쪼개 인터리빙(번갈아) 전송 + 우선순위(+push)",
+            { "name": "어느 수준의 해결?", "children": ["★ 논리적 수준만. O2·O3·O4 빨리 도착, O1만 약간 지연"] }
+          ]},
+          { "name": "HTTP/2의 한계는?", "children": [
+            "단일 TCP라 패킷 손실 복구 시 모든 객체 전송이 멈춤(물리적 HOL blocking)",
+            { "name": "비유", "children": ["계산원이 화장실 가면 잔챙이든 큰 놈이든 다 같이 대기"] }
+          ]},
+          { "name": "HTTP/3의 해결책은?", "children": [
+            "UDP 위에서 동작 → 물리적 HOL blocking 제거. 보안 + 객체별 오류/혼잡 제어 추가",
+            { "name": "왜 UDP면 해결?", "children": ["UDP 데이터그램은 서로 독립(앞뒤 없음) → 병렬화 쉬움 (TCP는 byte stream 모델로 강제 순서化)"] },
+            { "name": "보급 정도는?", "children": ["아직 널리 안 쓰임. 자세한 건 전송계층(Ch3)"] }
+          ]},
+          { "name": "★ 헷갈림 — 논리적 vs 물리적", "children": ["HTTP/2 = 논리적 HOL 해결(TCP 손실 시 전부 stall) / HTTP/3 = UDP로 물리적 HOL까지 해결"] },
+          { "name": "예상 출제", "children": ["[객관식] HTTP/2가 해결한 문제? → (논리적) HOL / [비교] 1.1/2/3"] }
+        ]}
+      ]
+    },
+    {
+      "name": "4. ★★ 이메일: SMTP / IMAP·HTTP·POP3",
+      "children": [
+        { "name": "★ 2단계 구조 (핵심)", "children": [
+          "서버 간 = 푸시(SMTP) + 마지막 서버→수신자 = 풀(IMAP/HTTP/POP3)"
+        ]},
+        { "name": "3대 구성요소는?", "children": [
+          { "name": "① User Agent(UA)", "children": ["메일 리더(클라이언트 SW): Outlook, 아이폰 메일, 웹메일 — 작성·편집·읽기"] },
+          { "name": "② Mail Server", "children": ["mailbox(수신 메시지 보관) + message queue(발신 대기 큐)"] },
+          { "name": "③ SMTP", "children": ["메일 서버 간 전송 프로토콜"] }
+        ]},
+        { "name": "SMTP [RFC 5321]", "children": [
+          { "name": "전송 프로토콜·포트는?", "children": ["TCP, 포트 25로 메일을 신뢰성 있게 직접 전송: 보내는 서버(클라 역할) → 받는 서버"] },
+          { "name": "★ push인가 pull인가?", "children": ["push(푸시) 프로토콜 — 메일을 수신측 mailbox까지 자꾸 밀어 배달"] },
+          { "name": "실제 경로는?", "children": ["1:1 직통이 아니라 여러 메일서버를 경유(우체국→우편집중국→트럭 비유). 거치는 모든 서버 간엔 SMTP 푸시"] },
+          { "name": "목적지 메일서버 IP는 어떻게 찾나?", "children": ["MX 레코드로 DNS 조회 (포트 25)"] },
+          { "name": "3단계는?", "children": ["handshaking(greeting) → transfer → closure. HTTP처럼 command/response"] }
+        ]},
+        { "name": "Alice → Bob 시나리오", "children": [
+          "① Alice가 UA로 메일 작성('to' bob@someschool.edu)",
+          "② UA가 SMTP로 Alice 메일서버에 전달 → message queue 적재",
+          "③ Alice 서버 SMTP 클라이언트 측이 Bob 서버와 TCP 연결(MX로 IP 조회, 포트 25)",
+          "④ SMTP 클라이언트가 TCP로 메일 전송",
+          "⑤ Bob 메일서버가 Bob의 mailbox에 적재",
+          "⑥ Bob이 UA로 읽음(pull)"
+        ]},
+        { "name": "SMTP 대화 예 (상태코드)", "children": [
+          { "name": "220", "children": ["연결 성공"] },
+          { "name": "250", "children": ["OK (HELO 성공, 메시지 accepted)"] },
+          { "name": "354", "children": ["본문 입력 시작 (DATA 후)"] },
+          { "name": "221", "children": ["연결 종료 (QUIT 후 closing)"] },
+          { "name": "CRLF.CRLF의 의미는?", "children": ["한 줄에 점 하나(.) = 메일 끝 판단"] },
+          { "name": "MAIL FROM vs RCPT TO", "children": ["MAIL FROM(발신자, 체크 안 함) / RCPT TO(수신자, 계정 실제 존재 확인)"] }
+        ]},
+        { "name": "★ SMTP 특징 (시험 빈출)", "children": [
+          { "name": "연결 방식은?", "children": ["persistent 연결 사용"] },
+          { "name": "★ 인코딩 제약은?", "children": ["7-bit ASCII만 허용(헤더+본문). 7비트 = 최상위 비트 0(미국 자판 출력문자) → 한국어·이미지·PDF·MP3 원래 못 보냄(이후 MIME 보완)"] },
+          { "name": "끝 판단은?", "children": ["CRLF.CRLF (한 줄에 점 하나)"] },
+          { "name": "방식은?", "children": ["command/response (220 연결성공·250 OK·354 본문시작·221 종료)"] }
+        ]},
+        { "name": "★ SMTP는 전달(transfer) 프로토콜", "children": [
+          "메일 메시지 내용의 포맷은 규정 안 함 — 메시지 내용 문법은 별도 표준 RFC 2822",
+          { "name": "교수 반복 강조", "children": ["'편지가 어떻게 생겨야 하나(메시지 포맷) ≠ 편지를 어떻게 배달하나(SMTP). 절대 혼동 금지'"] },
+          { "name": "★ 혼동 주의 포인트", "children": ["메시지 안 To:/From: 헤더 ≠ SMTP 명령 RCPT TO:/MAIL FROM:"] }
+        ]},
+        { "name": "★ 마지막 단계는 풀(pull)", "children": [
+          { "name": "왜 push 못 하나?", "children": ["최종 수신자(Bob)가 언제·어떤 기기(폰/랩탑/태블릿)로 볼지 모름 → mailbox까지만 배달(미국 우편함 비유), Bob이 pull로 꺼내감"] },
+          { "name": "읽기 프로토콜 3종", "children": [
+            { "name": "IMAP [RFC 3501]", "children": ["메시지를 서버에 보관, 조회·삭제·폴더 관리. (삼성폰 Gmail 전용앱)"] },
+            { "name": "HTTP", "children": ["웹메일(Gmail/Hotmail/Yahoo) 웹 인터페이스. (PC 웹브라우저 Gmail)"] },
+            { "name": "POP3", "children": ["옛날 우체국 프로토콜(Post Office Protocol v3). 슬라이드엔 없으나 교수가 보충"] }
+          ]},
+          { "name": "어떤 읽기 프로토콜을 쓰나?", "children": ["서버가 지원하는 것 중 하나면 됨"] }
+        ]},
+        { "name": "SMTP vs HTTP", "children": [
+          { "name": "방향", "children": ["HTTP = client pull / SMTP = client push"] },
+          { "name": "객체 처리", "children": ["HTTP = 객체마다 별도 응답 메시지 / SMTP = multipart로 여러 객체를 한 메시지에"] }
+        ]},
+        { "name": "예상 출제", "children": [
+          "[단답] SMTP 포트? → 25 / 읽기 프로토콜 3가지? → IMAP·HTTP·POP3",
+          "[비교] SMTP는 push? pull? / [단답] 메일서버 IP를 찾는 RR 타입? → MX"
+        ]}
+      ]
+    },
+    {
+      "name": "5. ★★ DNS (Domain Name System) — 15회차 주인공",
+      "children": [
+        { "name": "★ DNS는 왜 특별한가?", "children": [
+          "HTTP=웹, SMTP=이메일처럼 특정 응용에 부속된 게 아니라, 모든 응용을 떠받치는 응용계층 프로토콜 (위에 얹힌 특정 응용 없음)",
+          { "name": "교수 멘트", "children": ["'DNS만큼 더 중요한 게 없죠'"] }
+        ]},
+        { "name": "핵심 기능은?", "children": [
+          "도메인 이름(cs.umass.edu) ↔ IP 주소(32비트) 번역",
+          { "name": "왜 자동 번역되나?", "children": ["인터넷 내부에선 IP 주소밖에 못 씀 → URL 속 도메인 이름은 연결 전 자동으로 DNS 질의를 거쳐 IP로 번역"] },
+          { "name": "비유", "children": ["전화가 번호로만 걸리는 걸 스마트폰 주소록이 번역하듯 — DNS = 인터넷의 주소록"] }
+        ]},
+        { "name": "★ 왜 분산 데이터베이스인가? (중앙집중 안 하는 이유)", "children": [
+          { "name": "4가지 이유", "children": ["단일 장애점 / 트래픽 폭주 / 거리(지연) / 유지보수 → 확장 불가"] },
+          { "name": "규모 감각", "children": ["Comcast 6000억 질의/일, Akamai 2.2조 질의/일, 전체 ~10억 레코드"] },
+          { "name": "자연스러운 분산은?", "children": ["각 기관이 자기 도메인을 자기가 등록·관리 (korea.ac.kr은 고려대가)"] }
+        ]},
+        { "name": "★ DNS 서비스 4가지는?", "children": [
+          "호스트명 → IP 변환",
+          "호스트 별칭(host aliasing, canonical·alias)",
+          "메일서버 별칭(mail server aliasing)",
+          "부하 분산(load distribution, 한 이름 ↔ 여러 IP)"
+        ]},
+        { "name": "★ DNS 서버 4종 (시험 구분)", "children": [
+          { "name": "루트(root) 네임 서버", "children": [
+            "못 푸는 서버의 최후의 연락처(contact-of-last-resort). iterative 방식",
+            { "name": "관리·개수는?", "children": ["ICANN 관리, 논리적 13개(각각 수백 개로 레플리케이션)"] },
+            { "name": "취약성 사례", "children": ["2000년대 초 일부 루트 서버가 공격으로 무력화 → 이후 수백 개로 복제해 사실상 다운 불가"] }
+          ]},
+          { "name": "TLD(Top-Level Domain) 서버", "children": [
+            ".com .org .net .edu 등 + 국가 도메인",
+            { "name": "gTLD란?", "children": ["원래 7개: com/net/org/gov/int/mil 등. 100만 불 내면 새 TLD 구입 가능"] },
+            { "name": "ccTLD란?", "children": ["국가코드 TLD: kr(한국), cn(중국), ch(스위스=Confoederatio Helvetica), uk 등"] },
+            { "name": "관리 주체는?", "children": ["~20개로 분산(Verisign, Network Solutions 등) → 한 주체의 독박/사고 방지"] }
+          ]},
+          { "name": "Authoritative(권위) 네임 서버", "children": [
+            "각 기관이 자기 도메인의 원본 RR 파일(zone 파일)을 보관·응답",
+            { "name": "'authoritative'의 뜻은?", "children": ["권한이 아니라 권위(authority) — 그 분야에 정통해 믿을 수 있다는 뜻. korea.ac.kr은 고대가 권위자"] }
+          ]},
+          { "name": "로컬(local) = 디폴트 네임 서버", "children": [
+            "호스트가 질의를 맨 먼저 보내는 서버",
+            { "name": "★ 계층에 속하나?", "children": ["엄밀히 속하지 않음. 교수: '로컬은 부적절, 정확히는 디폴트(default) 네임 서버'"] },
+            { "name": "왜 '로컬'이 어폐?", "children": ["집 KT는 168.126.63.1/.2지만 8.8.8.8(구글) 등 멀리 있는 서버로 바꿀 수 있으니 '로컬'은 어폐"] },
+            { "name": "찾는 법", "children": ["macOS: scutil --dns / Windows: ipconfig /all"] }
+          ]}
+        ]},
+        { "name": "★ 이름 해석: iterative vs recursive", "children": [
+          { "name": "iterative(반복) 질의란?", "children": [
+            "받은 서버가 답 대신 '다음에 물어볼 서버 주소'만 알려줌 ('난 몰라, 쟤한테 물어봐')",
+            { "name": "누가 이 방식? 왜?", "children": ["루트·TLD가 사용 — 트리 상단에 부하 집중되므로 한 스텝씩만 안내해 짐을 덜기 위함"] }
+          ]},
+          { "name": "recursive(재귀) 질의란?", "children": [
+            "질문하면 최종 답을 대신 찾아 돌려줌 (내부적으로 그 서버가 다 찾아옴)",
+            { "name": "비유", "children": ["factorial(10) 호출 → 답만 보이지만 수면 아래서 재귀 호출이 잔뜩 돈 것"] },
+            { "name": "부담은?", "children": ["상위 계층 서버에 전가 → 상단 부하 ↑ (그래서 상단은 iterative 선호)"] }
+          ]},
+          { "name": "일반적 동작은?", "children": ["호스트→로컬은 recursive, 로컬→루트/TLD/authoritative는 iterative. 99.9%는 로컬(+캐시)에서 해결, 없을 때만 위로"] }
+        ]},
+        { "name": "★ 캐싱 & TTL", "children": [
+          { "name": "캐싱이란?", "children": ["어떤 네임 서버든 한 번 배운 매핑을 캐시 → 같은 질의엔 캐시로 즉답"] },
+          { "name": "캐시 응답의 이름은?", "children": ["'권한 없는(non-authoritative) 응답' (authoritative 서버까지 안 갔다는 뜻, from cache)"] },
+          { "name": "TTL(Time To Live)이란?", "children": ["캐시 엔트리 만료 시간"] },
+          { "name": "★ DNS TTL vs IP TTL", "children": ["서로 다름 — 혼동 금지! (IP 헤더의 TTL과 전혀 별개)"] },
+          { "name": "out-of-date 문제는?", "children": ["원본이 바뀌어도 TTL 만료 전엔 옛 값 유지 → 변경 임박 시 TTL을 짧게 내려 캐시를 빨리 버리게 함. 결론: DNS는 best-effort 번역"] },
+          { "name": "루트 우회는?", "children": ["TLD 서버 정보는 보통 로컬에 캐시되어 루트 서버를 우회(bypass)"] },
+          { "name": "캐시 확인/비우기", "children": ["ipconfig /displaydns(확인), ipconfig /flushdns(비움)"] }
+        ]},
+        { "name": "★ 자원 레코드(RR): (name, value, type, ttl)", "children": [
+          { "name": "A 타입", "children": ["name=호스트명, value=IPv4 주소 — 기본 번역 (nslookup 기본 질의)"] },
+          { "name": "AAAA 타입", "children": ["name=호스트명, value=IPv6 주소 — IPv4의 4배 길이라 'A' 4개"] },
+          { "name": "NS 타입", "children": ["name=도메인, value=authoritative 네임서버 호스트명 — 이 도메인 책임 서버"] },
+          { "name": "MX 타입", "children": ["name=도메인, value=SMTP 메일서버 이름 — preference 값 작을수록 우선"] },
+          { "name": "CNAME 타입", "children": ["name=별칭(alias), value=본명(canonical name) — www.ibm.com → servereast.backup2.ibm.com"] },
+          { "name": "★ NS vs A 구분", "children": ["NS = 서버 이름 / A = 서버 IP"] }
+        ]},
+        { "name": "nslookup 실연", "children": [
+          { "name": "set type=A", "children": ["korea.ac.kr → IPv4 주소(163.152.x.x). AAAA는 없으면 무응답"] },
+          { "name": "set type=MX", "children": ["korea.ac.kr → 메일서버 5개(고대는 Gmail에 위탁 → ...mx.l.google.com, preference=1이 1순위)"] },
+          { "name": "set type=NS", "children": ["네임 서버 2대(kucc...korea.ac.kr)"] },
+          { "name": "set type=CNAME", "children": ["www.yahoo.com → 본명 반환(...yahooDNS.net, 사람이 외우기 힘든 이름)"] },
+          { "name": "서버 변경", "children": ["server 8.8.8.8(구글) 등으로 질의 서버를 바꿔 비교 가능"] }
+        ]},
+        { "name": "★ DNS 메시지 형식", "children": [
+          { "name": "query와 reply의 포맷은?", "children": ["같은 포맷, 헤더 + 바디"] },
+          { "name": "헤더 — identification", "children": ["16비트 질의 번호, 응답은 같은 번호로 echo → 매칭에 사용"] },
+          { "name": "헤더 — flags", "children": ["query/reply, recursion desired, recursion available, reply is authoritative"] },
+          { "name": "바디 4개 섹션은?", "children": [
+            "① Question(도메인 이름 + 타입)",
+            "② Answer RR(답)",
+            "③ Authority RR(authoritative 서버 정보)",
+            "④ Additional RR(예: MX 답에 곁들인 메일서버 IP)"
+          ]},
+          { "name": "재미있는 점은?", "children": ["응답에도 질문을 복창해서 적음 ('너 이거 물었지? 답은 이거야')"] }
+        ]},
+        { "name": "등록 & 보안", "children": [
+          { "name": "등록(registration)이란?", "children": ["RR을 zone 파일에 넣는 행위. 도메인 등록기관(예: Network Solutions)에 등록(유료)"] },
+          { "name": "등록 예시", "children": ["networkutopia.com 등록 → TLD에 NS RR·A RR 삽입, 자기 authoritative 서버에 www의 A·도메인의 MX 생성"] },
+          { "name": "DNS 보안 위협", "children": ["DDoS(루트/TLD 폭격), 스푸핑/캐시 포이즈닝(가짜 응답)"] },
+          { "name": "DNSSEC란?", "children": ["[RFC 4033] 인증·메시지 무결성 제공"] }
+        ]},
+        { "name": "★ 헷갈림 정리", "children": [
+          "① DNS TTL ≠ IP TTL",
+          "② local = default(계층 밖)",
+          "③ authoritative = 권위(권한 아님)",
+          "④ NS(서버 이름) vs A(서버 IP) 구분"
+        ]},
+        { "name": "예상 출제", "children": [
+          "[단답] DNS 서버 계층 4종? / iterative와 recursive 차이?",
+          "[객관식] RR 타입 매칭 / non-authoritative 응답 의미",
+          "[단답] DNS가 UDP를 쓰는 이유는? → 단순 트랜잭션"
+        ]}
+      ]
+    },
+    {
+      "name": "6. ★ P2P: 분배시간 + BitTorrent — 15회차",
+      "children": [
+        { "name": "P2P 아키텍처 특징은?", "children": [
+          "데이터가 서버가 아니라 동료(peer)에게서 옴. 항상 켜진 서버 없음, 임의 단말끼리 직접 통신",
+          { "name": "자가 확장성이란?", "children": ["새 피어가 새 수요뿐 아니라 새 서비스 용량도 가져옴"] },
+          { "name": "단점은?", "children": ["피어가 간헐적 접속(IP가 DHCP로 자꾸 바뀜) → 관리 복잡 → '출석부' 서버 필요"] }
+        ]},
+        { "name": "★ 분배시간: client-server vs P2P", "children": [
+          { "name": "기호 정의", "children": ["F=파일 크기, us=서버 업로드, ui=peer i 업로드, dmin=최소 다운로드율, N=peer 수"] },
+          { "name": "client-server 분배시간은?", "children": [
+            "D_cs ≥ max{ NF/us , F/dmin } → N에 선형 증가",
+            { "name": "왜 선형?", "children": ["서버가 N개 복사본을 순차 업로드"] }
+          ]},
+          { "name": "P2P 분배시간은?", "children": [
+            "D_P2P ≥ max{ F/us , F/dmin , NF/(us+Σui) } → 피어 늘면 용량도 늘어 자기 확장성 → 로그 스케일",
+            { "name": "왜 로그?", "children": ["서버는 최소 1개만 올리면 되고 피어들이 서로 올려줌 → 총 업로드율 us+Σui"] }
+          ]},
+          { "name": "교수 비유", "children": ["선생님 혼자 60명에게 = 60배(선형) / 학생들이 2→4→8…로 옆으로 퍼뜨리면 확산은 지수적 → 시간은 로그"] },
+          { "name": "★ 계산문제는?", "children": ["안 내기로 결정(교수 명시) — 개념(선형 vs 로그·자기확장성)만"] }
+        ]},
+        { "name": "★ BitTorrent", "children": [
+          { "name": "파일을 어떻게 쪼개나?", "children": ["256Kb chunk로 분할(병렬성↑, 유희왕 카드 모으기 비유)"] },
+          { "name": "torrent란?", "children": ["한 파일의 chunk를 주고받는 peer 그룹"] },
+          { "name": "tracker란?", "children": ["참여 peer를 추적하는 서버('출석부')"] },
+          { "name": "churn이란?", "children": ["peer가 수시로 들고남. 완료 후 (이기적)이탈 or (이타적)잔류"] },
+          { "name": "★ chunk 요청 방식은?", "children": ["rarest first(희귀한 것 먼저) — 주기적으로 이웃 보유 목록 확인 후 가장 희귀한 chunk부터 요청"] },
+          { "name": "★ chunk 전송 방식은? (tit-for-tat)", "children": [
+            "tit-for-tat(맞대응): 자기에게 가장 빠르게 보내주는 상위 4 peer에게만 전송, 나머지는 choke(차단)",
+            { "name": "재평가 주기는?", "children": ["10초마다 top-4 재평가"] },
+            { "name": "optimistic unchoke란?", "children": ["30초마다 무작위 1명에게 시험삼아 전송 → 새 파트너 발굴·프리라이더 견제"] },
+            { "name": "효과는?", "children": ["업로드율 높이면 더 좋은 거래 파트너 → 더 빠른 다운로드"] }
+          ]}
+        ]},
+        { "name": "예상 출제", "children": ["[단답] rarest first / tit-for-tat 의미 / [객관식] P2P 자기확장성·분배시간 비교"] }
+      ]
+    },
+    {
+      "name": "7. ★ 비디오 스트리밍 & CDN — 15회차",
+      "children": [
+        { "name": "배경", "children": [
+          "스트리밍 비디오 = 인터넷 트래픽 80%(2020, Netflix·YouTube·Prime)",
+          { "name": "두 가지 도전 과제는?", "children": ["규모(~10억 사용자) + 이질성(유선/모바일 등 대역폭 빈부차)"] }
+        ]},
+        { "name": "비디오 특성 & 압축(coding)", "children": [
+          { "name": "비디오란?", "children": ["일정 속도로 표시되는 이미지 시퀀스(예: 24~30 fps). 각 이미지=픽셀 배열"] },
+          { "name": "★ 공간적(spatial) 압축이란?", "children": ["한 이미지 내 중복 제거 — 뉴스에서 안 움직이는 배경"] },
+          { "name": "★ 시간적(temporal) 압축이란?", "children": ["프레임 간 중복 제거 — 앞뒤 프레임 거의 같으면 델타(차이)만 코딩(움직이는 입만)"] },
+          { "name": "★ CBR vs VBR", "children": [
+            "CBR(constant bit rate, 고정) vs VBR(variable bit rate, 가변)",
+            { "name": "어느 게 더 효율적?", "children": ["VBR — 공간·시간 코딩량에 따라 율 변동. 요즘 대부분 VBR(표준)"] },
+            { "name": "예시", "children": ["MPEG1(CD) 1.5M / MPEG2(DVD) 3~6M / MPEG4(인터넷) 64K~12M"] }
+          ]}
+        ]},
+        { "name": "★ 지터(플레이아웃) 버퍼", "children": [
+          { "name": "연속 재생 제약이란?", "children": ["재생은 원본과 동일한 타이밍(균일)으로 해야 부드러움"] },
+          { "name": "문제는?", "children": ["네트워크 지연이 들쭉날쭉(jitter) → 도착 시간 불규칙 (만원버스 비유)"] },
+          { "name": "해결책은?", "children": [
+            "클라이언트측 플레이아웃 버퍼(=지터 버퍼) — 일찍 온 프레임을 일부러 지연시켜 모았다 일정 레이트로 방류(댐 비유)"
+          ]},
+          { "name": "버퍼 고갈되면?", "children": ["starvation → 재생 멈춤('버퍼링', 유튜브 멈춤). overflow도 피해야 함"] }
+        ]},
+        { "name": "★ DASH (Dynamic Adaptive Streaming over HTTP)", "children": [
+          { "name": "서버가 하는 일은?", "children": ["비디오를 chunk로 쪼개고 각 chunk를 여러 비트율로 인코딩해 별도 파일 저장 → CDN 노드에 복제"] },
+          { "name": "manifest 파일이란?", "children": ["각 chunk의 여러 버전 URL 목록 (클라가 먼저 받아 어디서 받을지 파악)"] },
+          { "name": "★ 지능은 어디에?", "children": [
+            "클라이언트(client-side intelligence) — 주기적으로 대역폭 추정 → manifest 참고해 한 번에 한 chunk씩 요청",
+            { "name": "무엇을 결정?", "children": ["언제(버퍼 고갈/과잉 방지) · 어떤 비트율(대역폭 좋으면 고화질) · 어디서(가깝거나 여유 있는 서버)"] },
+            { "name": "결과는?", "children": ["유튜브가 망 상황 따라 해상도가 깨졌다 선명해졌다 하는 원인"] }
+          ]},
+          { "name": "스트리밍 비디오 = ?", "children": ["인코딩 + DASH + 플레이아웃 버퍼"] }
+        ]},
+        { "name": "★ CDN (Content Distribution Network) & OTT", "children": [
+          { "name": "왜 단일 메가서버는 안 되나?", "children": ["단일 장애점·혼잡·먼 경로 → 확장 불가"] },
+          { "name": "CDN의 해법은?", "children": ["영상 복사본을 지리적으로 분산 배치(사용자 근처에 배달 서버). CDN은 웹캐시도 겸함"] },
+          { "name": "★ enter deep vs bring home", "children": [
+            { "name": "enter deep(Akamai)", "children": ["access network 깊숙이 수많은 서버를 사용자 가까이 (2015 기준 120개국 24만 대)"] },
+            { "name": "bring home(Limelight)", "children": ["POP 근처에 더 큰 클러스터 소수(수십 개)"] },
+            { "name": "왜 다른가?", "children": ["회사마다 타깃 고객·비즈니스 모델이 달라 서버 수·배치가 다름"] }
+          ]},
+          { "name": "Netflix OpenConnect", "children": [
+            "콘텐츠 사본을 전 세계 CDN 노드에 저장, manifest로 감당 가능한 최고 화질 검색",
+            { "name": "★ 접속 흐름은?", "children": ["웹페이지 → DNS(+CNAME 본명 변환)로 CDN 서버 이름 획득 → TCP 연결 → HTTP 스트리밍"] }
+          ]},
+          { "name": "OTT(Over The Top) 난제는?", "children": ["어떤 콘텐츠를 어느 CDN 노드에? 어느 노드에서 어떤 비트율로 가져올까? — 혼잡한 인터넷을 엣지에서 대처"] }
+        ]},
+        { "name": "예상 출제", "children": [
+          "[객관식] 공간/시간 압축 구분 · CBR vs VBR · 지터버퍼 역할 · DASH의 지능=클라이언트 · enter deep vs bring home",
+          "[단답] DASH manifest의 역할"
+        ]}
+      ]
+    },
+    {
+      "name": "8. 클라이언트-서버 vs P2P 패러다임 ★",
+      "children": [
+        { "name": "클라이언트-서버 정리", "children": ["서버 always-on, 영구 IP·고정 위치·고정 포트, 데이터센터. 클라이언트끼리 직접 통신 불가(게임도 서버 매개 간접 통신)"] },
+        { "name": "P2P 정리", "children": ["동등한 peer끼리 직접 교환. 자기 확장성. 단 완전 무서버 아님 — 디렉터리/트래커 서버 필요"] },
+        { "name": "예상 출제", "children": ["[객관식/비교] / [단답] P2P 자기확장성이란?"] }
+      ]
+    },
+    {
+      "name": "✂️ 소켓 프로그래밍 (저비중 — 교수 강의 안 함)",
+      "children": [
+        { "name": "출제 비중은?", "children": ["교수: '뒤에 소켓 프로그래밍은 제가 직접 하지 않겠습니다' → 저비중. 단 '소켓 = IP+포트' 식별 개념은 ★★★ 유지(별개 강조)"] },
+        { "name": "소켓 두 타입", "children": ["UDP(비신뢰 datagram) / TCP(신뢰, byte stream)"] },
+        { "name": "UDP 소켓 흐름", "children": [
+          "연결 없음(handshaking 없음). 송신자가 매 패킷마다 목적지 IP+포트 명시",
+          "클라이언트: socket(SOCK_DGRAM) → sendto() → recvfrom()",
+          "서버: socket(SOCK_DGRAM) → bind() → recvfrom()/sendto()"
+        ]},
+        { "name": "TCP 소켓 흐름", "children": [
+          "서버가 welcoming socket 생성 → 클라이언트 connect → 연결 시 서버가 그 클라이언트 전용 새 소켓 생성",
+          "클라이언트: socket(SOCK_STREAM) → connect() → send()/recv()",
+          "서버: socket(SOCK_STREAM) → bind() → listen() → accept() → recv()/send()"
+        ]}
+      ]
+    },
+    {
+      "name": "✂️ 교수가 시험에서 제외/스킵 명시한 것",
+      "children": [
+        { "name": "소켓 프로그래밍", "children": ["UDP/TCP API — 강의 안 함. 단 '소켓 = IP+포트' 개념은 ★★★ 유지"] },
+        { "name": "P2P 분배시간 계산문제", "children": ["'안 내기로 결정' → 수식 유도 X, 선형 vs 로그·자기확장성 개념만"] },
+        { "name": "Security(보안)", "children": ["정보보호 과목에서 자세히. TLS도 개념만(자세한 건 Ch8)"] },
+        { "name": "응용 요구사항 표·세부 분류", "children": ["'구질구질하니 넘어감.' 개념만, 응용별 표 암기 불필요"] },
+        { "name": "전체 방침", "children": ["각 장에서 한두 문제. 대표 개념·가장 중요한 것 위주. 지엽적 함정 없음"] }
+      ]
+    },
+    {
+      "name": "🔥 가장 중요한 예상 출제 TOP 4",
+      "children": [
+        { "name": "①[단답] DNS가 UDP를 쓰는 3가지 경우는? (교수 직접 출제 예고)", "children": [
+          "① 실시간(real-time) ② IP 멀티캐스트(1대多, 예 IPTV) ③ 단순 트랜잭션(패킷 1개 질문+1개 응답) ← DNS가 대표 예",
+          { "name": "함정", "children": ["'기본은 무조건 TCP'가 대전제. 3개 다 못 쓰면 감점 — 특히 ③ '단순 트랜잭션' 빠뜨리지 말 것"] }
+        ]},
+        { "name": "②[단답·서술] HTTP는 왜 stateless로 설계? 상태 유지 메커니즘과 구성요소는?", "children": [
+          "무상태 이유 = 프로토콜 설계가 훨씬 단순(stateful이면 복잡한 FSM). 상태 유지 = 쿠키. 4요소 = Set-cookie 응답헤더 / cookie 요청헤더 / 브라우저 쿠키파일 / 백엔드 DB",
+          { "name": "함정", "children": ["쿠키는 '메모리'가 아니라 작은 토큰/징표. 도메인별 매칭되는 것만 제시"] }
+        ]},
+        { "name": "③[단답] 소켓 식별 2값과 응용계층의 본질은? (교수 '분명히 기억하라')", "children": [
+          "소켓 식별자 = IP 주소 + 포트 번호. 응용계층(1~5계층)의 본질 = IPC(인터프로세스 커뮤니케이션)",
+          { "name": "함정", "children": ["IP만으론 부족 — 한 호스트에 프로세스 여럿이라 포트 필요. 포트 = 전송계층 (디)멀티플렉싱의 키"] }
+        ]},
+        { "name": "④[비교·단답] SMTP는 push? pull? 읽기 프로토콜 3가지·포트·특징은?", "children": [
+          "SMTP = push(서버 간 밀어 배달), TCP 포트 25, 7-bit ASCII·persistent·CRLF.CRLF. 마지막 단계는 pull: IMAP/HTTP/POP3",
+          { "name": "함정", "children": ["메시지 안 To:/From: ≠ SMTP 명령 RCPT TO:/MAIL FROM:. 메시지 포맷(RFC 2822) ≠ 전달 프로토콜(SMTP)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "★ 시험 포인트 / 자주 헷갈리는 점",
+      "children": [
+        { "name": "TCP vs UDP 선택", "children": ["기본은 TCP, UDP는 ① 실시간 ② 멀티캐스트 ③ 단순 트랜잭션 3가지만. VoIP는 시그널링=TCP·음성=UDP, 게임 대부분 TCP"] },
+        { "name": "HTTP stateless → 쿠키", "children": ["상태 유지는 쿠키(HTTP 외부). 4요소: Set-cookie 응답헤더 / cookie 요청헤더 / 브라우저 쿠키파일 / 백엔드 DB"] },
+        { "name": "Non-persistent vs Persistent", "children": ["응답시간 = 2RTT + 전송시간(per object, non-persistent), persistent는 연결 재사용으로 최소 1RTT"] },
+        { "name": "HTTP/1.1 → /2 → /3", "children": ["1.1(FCFS HOL) → 2(프레임 인터리빙, 논리적 HOL 해결) → 3(UDP로 물리적 HOL 해결). HTTP/2도 TCP 패킷손실 시 전부 stall"] },
+        { "name": "HTTP 메서드", "children": ["GET(body 없음)/POST(새 객체 생성)/HEAD(헤더만)/PUT(같은 URL이면 대체)"] },
+        { "name": "상태코드", "children": ["2xx 성공(200) / 3xx 리다이렉트(301) / 4xx 클라이언트 오류(400/404) / 5xx 서버 오류(505)"] },
+        { "name": "Conditional GET", "children": ["If-modified-since → 변경 없으면 304 Not Modified(데이터 미전송)"] },
+        { "name": "웹캐시", "children": ["client+server 양역할, 적중률로 이용률·지연 계산. 요즘은 CDN이 흡수(웹캐시 ⊂ CDN)"] },
+        { "name": "SMTP", "children": ["TCP 포트 25, push, persistent, 7-bit ASCII, CRLF.CRLF로 끝, command/response(220/250/354/221)"] },
+        { "name": "SMTP는 전송 프로토콜", "children": ["메일 내용 포맷은 RFC 2822. 메시지의 To:/From: ≠ SMTP의 RCPT TO:/MAIL FROM:"] },
+        { "name": "메일 접근", "children": ["최종 수신은 pull(IMAP/HTTP/POP3). SMTP는 mailbox까지만. 메일서버 IP는 MX 레코드로 조회"] },
+        { "name": "DNS 서버 4종", "children": ["루트(최후 연락처, 13논리/수백 복제) / TLD(.com 등, ccTLD/gTLD) / authoritative(원본 zone 파일, '권위') / 로컬(=디폴트, 계층 밖, 첫 질의)"] },
+        { "name": "iterative vs recursive", "children": ["iterative=다음 서버 주소만(상단 부하↓) / recursive=최종 답 대신 찾아줌(상단 부하↑). 루트/TLD는 보통 iterative"] },
+        { "name": "DNS 캐싱·TTL", "children": ["캐시 응답 = non-authoritative. DNS TTL ≠ IP 헤더 TTL(혼동 금지). best-effort(out-of-date 가능)"] },
+        { "name": "RR 타입", "children": ["A(IPv4)/AAAA(IPv6)/NS(네임서버)/MX(메일서버, preference 작을수록 우선)/CNAME(별칭→본명). 형식 (name, value, type, ttl)"] },
+        { "name": "DNS 메시지", "children": ["query/reply 동일 포맷, 헤더(id 16비트·flags) + 4섹션(Question/Answer/Authority/Additional). 응답이 질문을 복창"] },
+        { "name": "P2P 분배시간", "children": ["client-server는 N에 선형(NF/us), P2P는 us+Σui 덕에 로그 스케일. 자기확장성. 계산은 출제 안 함"] },
+        { "name": "BitTorrent", "children": ["chunk(256Kb)·tracker·torrent / 요청은 rarest-first / 전송은 tit-for-tat(top4 + optimistic unchoke)"] },
+        { "name": "비디오 압축 2종", "children": ["공간적(이미지 내) + 시간적(프레임 간 델타). CBR(고정) vs VBR(가변, 더 효율·요즘 표준)"] },
+        { "name": "지터(플레이아웃) 버퍼", "children": ["가변 지연(jitter) 흡수 위해 클라가 일부러 지연 후 일정 레이트 재생. 고갈 시 '버퍼링' 멈춤"] },
+        { "name": "DASH", "children": ["chunk를 여러 비트율로 인코딩 + manifest URL 목록, 클라이언트가 대역폭 추정해 화질/시점/서버 선택"] },
+        { "name": "CDN", "children": ["영상 복사본 지리 분산. enter deep(Akamai, 다수) vs bring home(Limelight, POP 소수 대형). Netflix=OpenConnect, 접속 시 DNS→CNAME→CDN→TCP→HTTP"] },
+        { "name": "소켓·IPC", "children": ["소켓 식별자 = IP + 포트. 응용계층의 본질 = IPC(인터프로세스 커뮤니케이션)"] },
+        { "name": "인터넷 vs 전화망", "children": ["인터넷=똑똑한 edge + 투명한 core(빠른 배포) / 전화망=멍청한 edge + 똑똑한 core(느린 진화)"] }
+      ]
+    }
+  ]
+}

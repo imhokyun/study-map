@@ -1,0 +1,465 @@
+{
+  "id": "05_Ch5_ControlPlane",
+  "title": "5장 · 네트워크 계층: 제어 평면 (라우팅·BGP·SDN)",
+  "nodes": [
+    {
+      "name": "이 챕터 대표 핵심 (교수가 '제일 중요'라 한 것) ★★★",
+      "children": [
+        { "name": "① 두 계층 라우팅의 구분이란?", "children": [
+          "망 내부(intra-AS) = OSPF(link-state·Dijkstra, 최단경로) vs 망 사이(inter-AS) = BGP(정책 policy 기반)",
+          "교수가 강의 처음부터 끝까지 반복한 핵심 프레임",
+          { "name": "비유", "children": ["북한 평양은 가깝지만 직접 못 가고 중국 경유 → 망 사이는 거리가 아니라 정책·계약·정치가 결정"] }
+        ]},
+        { "name": "② BGP·SDN의 위상은?", "children": [
+          "BGP = 정책 기반 라우팅(policy-based)",
+          "SDN은 OSPF(intra-AS)의 진화/대체자이지 BGP는 대체 못 함",
+          "SDN은 단일 AS 안에서만 동작",
+          "라우팅 관점에서 OSPF의 경쟁자·대체자, 그러나 라우팅만 하는 게 아님"
+        ]},
+        { "name": "③ ICMP = IP의 짝꿍(companion)이란?", "children": [
+          "IP 배달사고 보고자",
+          "traceroute의 TTL 트릭과 type/code(특히 11/0, 3/3, 8/0·0/0)"
+        ]},
+        { "name": "교수 왈 — 한 가지로 압축하면?", "children": [
+          "'각 챕터에서 제일 중요한 것 한 가지씩 고르는 심정으로'",
+          "이 챕터는 '왜 라우팅을 2계층으로 나누나(OSPF vs BGP)' + 'BGP는 정책, SDN은 중앙집중'이 그 한 가지"
+        ]},
+        { "name": "출제 방식은?", "children": ["혼합형(객관식 + 단답/간단 서술형), 챕터 대표개념 위주. 디테일 암기·지엽 X, 원리·구분 이해 O"] }
+      ]
+    },
+    {
+      "name": "제어 평면이란? (Control plane 큰 그림)",
+      "children": [
+        { "name": "제어 평면 vs 데이터 평면", "children": [
+          "데이터 평면 = IP 데이터그램이 사용자 데이터를 실어 라우터→라우터로 이동(forwarding)",
+          "제어 평면 = 경로를 계산하고(routing) 개별 데이터그램 사건을 다루는 측면"
+        ]},
+        { "name": "라우팅 vs 포워딩 (절대 혼동 금지)", "children": [
+          { "name": "라우팅(routing)이란?", "children": ["source→destination 경로를 계산하는 작업(control plane). 패킷을 움직이는 게 아님. 소프트웨어, 밀리초"] },
+          { "name": "포워딩(forwarding)이란?", "children": ["들어온 IP 데이터그램의 목적지 IP를 보고 라우팅 테이블 조회 → 다음 홉(next-hop) 출력 포트로 한 칸 이동(data plane). 하드웨어, 나노초"] },
+          { "name": "한 줄 핵심", "children": ["라우팅 = 길 계산, 포워딩 = 실제 이동. IP는 길을 계산하지 않고 이미 계산된 라우팅 테이블을 사용할 뿐"] },
+          { "name": "포워딩 결정에 쓰는 주소는?", "children": ["IP 헤더의 두 주소(목적지·출발지) 중 목적지 IP로 결정"] }
+        ]},
+        { "name": "제어 평면을 구성하는 두 방식은?", "children": [
+          { "name": "per-router 제어 (전통)", "children": ["전통적 라우팅 알고리즘을 각 라우터에 분산 구현 — 라우터끼리 정보 교환해 각자 테이블 계산"] },
+          { "name": "논리적 중앙집중 제어 (SDN)", "children": ["(원격) 서버가 중앙에서 forwarding table을 계산해 라우터에 설치"] }
+        ]},
+        { "name": "라우팅 테이블은 누가 가지나?", "children": ["모든 호스트·모든 라우터가 빠짐없이 보유(없으면 데이터그램을 못 보냄)"] }
+      ]
+    },
+    {
+      "name": "왜 라우팅을 2계층(intra-AS / inter-AS)으로 나누나? ★★★",
+      "children": [
+        { "name": "인터넷의 구조는?", "children": [
+          "네트워크들의 느슨한 연합체(network of networks)",
+          "각 AS(Autonomous System, 자율 시스템 = '망' = '도메인')는 하나의 '나라'에 비유"
+        ]},
+        { "name": "intra-AS (intra-domain)란?", "children": [
+          "같은 AS 내부 라우팅. 같은 AS의 모든 라우터는 동일한 intra-domain 프로토콜 사용",
+          "예: OSPF(link-state), RIP, EIGRP",
+          "단일 관리자라 효율(최단경로) 추구 가능"
+        ]},
+        { "name": "inter-AS (inter-domain)란?", "children": [
+          "AS 간 라우팅. 사실상 표준 = BGP",
+          "서로 다른 사업자/국가라 정책·계약이 길을 결정",
+          { "name": "누가 담당하나?", "children": ["gateway router(AS 경계에 있고 다른 AS 라우터와 링크가 있는 라우터)"] }
+        ]},
+        { "name": "나누는 3가지 이유는? (시험 포인트)", "children": [
+          { "name": "① 정책(policy)", "children": ["inter-AS는 '내 트래픽이 누굴 거쳐 가나, 누가 내 망을 거쳐 가나'를 통제하고 싶음. intra-AS는 단일 관리자라 정책 문제 적음"] },
+          { "name": "② 규모(scale)", "children": ["계층적 라우팅으로 라우팅 테이블 크기·업데이트 트래픽 절감. 수십억 목적지를 평평한 테이블로 저장 불가"] },
+          { "name": "③ 성능(performance)", "children": ["intra-AS는 성능에 집중 가능, inter-AS는 정책이 성능보다 우선"] }
+        ]},
+        { "name": "gateway 라우터의 forwarding table은 어떻게 채워지나?", "children": [
+          "intra-AS + inter-AS 알고리즘이 함께 채움",
+          "intra-AS: AS 내부 목적지 엔트리 결정",
+          "inter-AS + intra-AS: 외부 목적지 엔트리 결정(어느 gateway로 나갈지 + 그 gateway까지 내부 경로)"
+        ]},
+        { "name": "교수 비유 — 서울→평양", "children": [
+          "서울→평양은 가깝지만 직접 못 가고 중국을 빙 둘러 감",
+          "망 사이는 물리적 거리(최단)가 1순위가 아니라 정책(정치·계약)이 결정",
+          "각 나라(AS) 내부 여행은 별개 차원의 결정(최단경로)"
+        ]},
+        { "name": "오답 포인트", "children": ["OSPF = 최단경로(거리), BGP = 정책(돈·정치). BGP에서 짧은 경로가 1순위라고 하면 오답"] }
+      ]
+    },
+    {
+      "name": "라우팅 알고리즘 2분류 — Link-State vs Distance-Vector ★★★",
+      "children": [
+        { "name": "Link-State 방식이란?", "children": [
+          "각 라우터가 자기 링크 상태(비용)를 AS 전체에 flooding → 모든 라우터가 동일한 전체 토폴로지 맵 확보 → 각자 Dijkstra로 중앙 계산식 최단경로 계산",
+          "대표 = OSPF",
+          { "name": "교수 강조", "children": ["'Dijkstra 이게 중요'"] }
+        ]},
+        { "name": "Distance-Vector 방식이란?", "children": [
+          "이웃과 거리벡터(distance vector)만 교환 → 점진적으로 경로 학습",
+          "대표 = RIP, EIGRP"
+        ]},
+        { "name": "둘의 핵심 차이는?", "children": ["link-state = 전체 맵 확보 후 Dijkstra 중앙 계산 / distance-vector = 이웃과 거리벡터만 교환"] },
+        { "name": "오답 포인트", "children": ["OSPF = link-state, RIP = distance-vector (혼동 주의)"] }
+      ]
+    },
+    {
+      "name": "OSPF — intra-AS의 대표 (link-state·Dijkstra) ★★★",
+      "children": [
+        { "name": "OSPF 풀이는?", "children": ["Open Shortest Path First"] },
+        { "name": "동작 원리는?", "children": [
+          "각 라우터가 자기 링크 상태(비용)를 AS 전체에 flooding",
+          "→ 모든 라우터가 동일한 전체 토폴로지 맵 확보",
+          "→ 각자 Dijkstra 알고리즘으로 최단경로 forwarding table 계산(자동차 내비게이션과 동일 원리)"
+        ]},
+        { "name": "flooding은 무엇 위에 올라가나? (오답 단골)", "children": ["IP 위에 직접 올라감 — TCP/UDP를 쓰지 않음"] },
+        { "name": "링크 비용 metric은?", "children": ["대역폭·지연 등으로 설정 가능"] },
+        { "name": "같은 AS 내 라우터들은?", "children": ["모두 동일한 intra 프로토콜을 사용"] },
+        { "name": "SDN과의 관계는?", "children": ["SDN은 라우터 각자 돌리던 Dijkstra 계산을 중앙 컨트롤러 하나가 대신 → OSPF의 진화/대체자"] },
+        { "name": "오답 포인트 3가지", "children": [
+          "① OSPF flooding은 TCP/UDP가 아니라 IP 위에 직접 올라감",
+          "② OSPF = link-state, RIP = distance-vector",
+          "③ OSPF는 최단경로(거리), BGP는 정책"
+        ]}
+      ]
+    },
+    {
+      "name": "BGP — 정책 기반 라우팅 (inter-AS) ★★★",
+      "children": [
+        { "name": "BGP 풀이/별명은?", "children": ["Border Gateway Protocol. '인터넷을 묶어주는 접착제', de facto inter-domain 라우팅 프로토콜"] },
+        { "name": "왜 정책 기반(policy-based)인가?", "children": [
+          "OSPF(최단경로 지상주의)와 정반대",
+          "망 간 연결은 계약 관계(돈), 정치적 관계가 1순위 — 최단(AS-PATH 짧음)이 1순위가 아님"
+        ]},
+        { "name": "경로 광고 직관은?", "children": [
+          "경로(prefix + attributes)를 광고(advertise)하며 AS-PATH가 누적됨. 받는 자가 정책으로 수락/거절·재광고 결정",
+          { "name": "교수 강조", "children": ["인터넷 구석구석에 '163.152(고대)는 이 방향'이라는 이정표(화살표)가 꽂혀 있고, 패킷은 IP 하나만 들고 그 화살표를 따라 미사일처럼 찾아감"] }
+        ]},
+        { "name": "BGP 경로 선택 우선순위는? ★★★", "children": [
+          { "name": "① local preference", "children": ["지역 선호값 = 정책 결정, 가장 우선"] },
+          { "name": "② shortest AS-PATH", "children": ["거치는 망 개수가 적은 것. 교수: '세 번째쯤 되는 기준, 1순위 아님!'"] },
+          { "name": "③ closest NEXT-HOP = hot-potato routing", "children": ["뜨거운 감자처럼 내 망 빨리 떠넘기기"] },
+          { "name": "핵심 직관", "children": ["AS-PATH 길이가 1순위가 아니다 — 관리자의 정책(local pref)이 우선"] }
+        ]},
+        { "name": "BGP 메시지 4개는? ★★", "children": [
+          { "name": "OPEN", "children": ["TCP 연결된 peer에게 BGP 세션 개시·인증. '우리 BGP로 얘기하자' 관계 트기"] },
+          { "name": "UPDATE (가장 핵심)", "children": ["새 경로 광고 / 옛 경로 철회(withdraw). 토폴로지 변화가 있을 때만 발생"] },
+          { "name": "KEEPALIVE", "children": ["① OPEN 요청에 대한 ACK(동의), ② UPDATE 없을 때 '나 살아있다' 생존 신호로 세션 유지"] },
+          { "name": "NOTIFICATION", "children": ["에러 보고. 받으면 연결을 끊어버림 → 재오픈 필요(단순 알림 아님)"] }
+        ]},
+        { "name": "BGP 세션은? ★★", "children": [
+          "두 peer가 TCP 연결을 먼저 뚫고 그 위에서 BGP 대화",
+          "반영구적 TCP 세션",
+          "BGP는 path-vector(경로 자체를 광고) 프로토콜"
+        ]},
+        { "name": "eBGP vs iBGP는? ★★", "children": [
+          { "name": "eBGP (external)", "children": ["이웃 AS로부터 subnet 도달 가능성(reachability) 정보 획득"] },
+          { "name": "iBGP (internal)", "children": ["그 정보를 AS 내부 모든 라우터에 전파"] },
+          { "name": "gateway 라우터는?", "children": ["eBGP와 iBGP를 둘 다 실행"] }
+        ]},
+        { "name": "경로 광고 속성(path attributes)은?", "children": [
+          { "name": "prefix", "children": ["광고되는 목적지 IP 주소 블록(고대 = 163.152.x.x, 앞 16비트가 prefix)"] },
+          { "name": "AS-PATH", "children": ["광고가 거쳐 온 AS들의 리스트(꼬리에 꼬리를 무는 누적 기록)"] },
+          { "name": "NEXT-HOP", "children": ["next-hop AS로 가는 내부 라우터 지정"] }
+        ]},
+        { "name": "정책 기반 라우팅(policy)의 작동은?", "children": [
+          "import 정책: 광고 받은 gateway가 경로 수락/거절(예: 'AS Y는 절대 안 거침')",
+          "다른 이웃 AS에 그 경로를 광고할지 여부도 정책으로 결정",
+          "ISP는 자기 고객 망 트래픽만 나르고 싶음 — 다른 ISP 간 transit 트래픽은 안 나름(돈 안 됨)"
+        ]},
+        { "name": "오답 포인트 3가지", "children": [
+          "① 'AS-PATH 짧은 게 1순위' → 오답(정책 = local pref가 우선)",
+          "② BGP는 UDP가 아니라 TCP 위",
+          "③ NOTIFICATION은 단순 알림이 아니라 연결을 끊는 에러"
+        ]}
+      ]
+    },
+    {
+      "name": "stub vs transit / multi-homed ★★",
+      "children": [
+        { "name": "stub network (말단망)란?", "children": ["패킷이 여기서 최초 출발·최종 도착(예: 고려대 망)"] },
+        { "name": "transit network (경유망)란?", "children": ["패킷이 거쳐 지나감 → 통행료로 수익(비행기 경유·호르무즈 통행료 비유)"] },
+        { "name": "multi-homed(멀티홈)란?", "children": ["안정성 위해 최소 2개 ISP에 연결하는 게 정석"] },
+        { "name": "예상 출제", "children": ["[단답·구분] stub과 transit 네트워크의 차이를 쓰시오"] }
+      ]
+    },
+    {
+      "name": "BGP 악용 / 장난질 (흥미 위주, 시험 잘 안 나옴) ★",
+      "children": [
+        { "name": "black-holing (블랙홀)이란?", "children": ["'나 D,E에 직접 연결됐어'라고 거짓 광고 → 트래픽을 빨아들여 도청(실제로 어떤 나라가 함)"] },
+        { "name": "AS-PATH prepending이란?", "children": ["트래픽 받기 싫으면 자기 AS를 여러 번 반복해 경로를 일부러 길게 만들어 회피 유도"] }
+      ]
+    },
+    {
+      "name": "SDN — 중앙집중 제어평면 (위상 ★★★ / 구조 ★★)",
+      "children": [
+        { "name": "전통 방식 vs SDN 방식은?", "children": [
+          { "name": "전통 방식", "children": ["라우터끼리 수군수군(OSPF) → 각자 전체 토폴로지 맵 획득 → 각 라우터가 Dijkstra 돌려 최단경로 계산(내비게이션과 동일)"] },
+          { "name": "SDN 방식", "children": ["중앙 서버 하나가 맵 보고 계산 → forwarding table을 라우터에 그냥 설치(install). 라우터는 계산 안 하고 받아서 설치만"] }
+        ]},
+        { "name": "SDN 정의는?", "children": ["'네트워크의 역할(routing·firewall·load balance·NAT…)을 소프트웨어가 정의(define)'. 라우팅은 여러 네트워크 응용 중 하나일 뿐"] },
+        { "name": "SDN의 위상은? (시험 핵심) ★★★", "children": [
+          "OSPF(intra-AS)의 진화/대체자",
+          { "name": "BGP는?", "children": ["대체 못 함"] },
+          { "name": "동작 범위는?", "children": ["단일 AS 안에서만(구글도 자기 망 안에서만). 인터넷 스케일링 불가"] }
+        ]},
+        { "name": "왜 중앙집중이 좋은가?", "children": [
+          "쉬운 망 관리: 라우터 오설정 방지, 트래픽 흐름 유연성↑",
+          "table-based forwarding(OpenFlow API) = 라우터를 '프로그래밍'. 중앙 계산이 분산보다 쉬움",
+          "개방형(non-proprietary) 제어평면 → 혁신 촉진"
+        ]},
+        { "name": "비유 — 메인프레임 → PC 혁명", "children": [
+          "수직통합(IBM 독점, 느린 혁신) → 수평분리(프로세서/OS/응용 분리, 개방 인터페이스, 빠른 혁신)",
+          "SDN도 같은 진화: 범용 하드웨어 + OS(컨트롤러) + 응용. 응용↔OS↔하드웨어"
+        ]},
+        { "name": "SDN 3계층 구조는? ★★", "children": [
+          { "name": "데이터평면 스위치", "children": ["빠르고 단순한 commodity 스위치. generalized data-plane forwarding(OpenFlow)을 하드웨어로 구현. flow table은 컨트롤러가 계산·설치('단순 무식한 돌쇠')"] },
+          { "name": "SDN 컨트롤러 (network OS)", "children": [
+            "네트워크 상태 유지. 성능·확장성·내결함성 위해 분산 시스템으로 구현('인형 조종자')",
+            { "name": "northbound API", "children": ["위쪽 응용과 통신"] },
+            { "name": "southbound API", "children": ["아래쪽 스위치와 통신"] }
+          ]},
+          { "name": "네트워크 제어 응용", "children": ["제어의 '두뇌'. 컨트롤러 하위 API로 제어 기능 구현. unbundled(3rd party 제공 가능, 라우터 벤더와 분리)"] }
+        ]},
+        { "name": "SDN의 강점 = Traffic Engineering ★★", "children": [
+          { "name": "전통 라우팅의 한계는?", "children": ["shortest-path tree 계산 → 한 (출발지,목적지) 쌍에 경로가 단 하나(트리엔 루프 없음)"] },
+          { "name": "전통 라우팅이 못 하는 3가지", "children": [
+            "① u→z를 최단(uxyz)이 아닌 다른 경로(uvwz)로 강제",
+            "② u→z 트래픽을 두 경로로 분할(load balancing)",
+            "③ 같은 목적지라도 트래픽 종류(blue/red)별로 다르게 라우팅"
+          ]},
+          { "name": "SDN은 어떻게 가능하게 하나?", "children": ["패킷 헤더의 임의 필드(예: 포트 80 vs 443, 출발지 A vs B)로 매칭 → fine-grained 제어 → 위 3가지 모두 가능"] },
+          { "name": "비유", "children": ["티맵이 같은 목적지라도 사용자마다 다른 길 안내 = traffic engineering으로 도로 분산"] }
+        ]},
+        { "name": "SDN의 단점/도전과제는? (시험 포인트)", "children": [
+          { "name": "SPOF (Single Point of Failure, 급소)", "children": ["컨트롤러 하나 죽으면 똑똑한 스위치도 다 바보가 됨(분산 라우팅은 일부 고장에도 나머지 동작) → 보통 컨트롤러를 분산 구현"] },
+          { "name": "인터넷 스케일링 불가", "children": ["단일 AS 안에서만 사용 가능 → BGP는 대체 못 함"] },
+          { "name": "제어평면 hardening", "children": ["신뢰성·보안을 'baked in' 해야 함"] }
+        ]},
+        { "name": "컨트롤러 제품 / 활용은? ★", "children": [
+          "대표 컨트롤러: OpenDaylight(ODL), ONOS",
+          { "name": "ONOS의 intent framework", "children": ["'어떻게(how)'가 아닌 '무엇(what)'을 명세, 분산 코어 강조"] },
+          "5G 셀룰러에서 SDN 핵심(4G부터 IP화, 코어망 규모가 커서 일찍 도입)"
+        ]},
+        { "name": "오답 포인트 3가지", "children": [
+          "① 'SDN이 BGP를 대체한다' → 오답",
+          "② SDN은 라우팅 전용이 아님(방화벽·NAT 등도 가능)",
+          "③ 전통 라우팅은 경로가 하나뿐(tree)"
+        ]}
+      ]
+    },
+    {
+      "name": "OpenFlow — SDN의 API이자 프로토콜 ★",
+      "children": [
+        { "name": "OpenFlow는 어디서 동작하나?", "children": ["컨트롤러 ↔ 스위치 사이, TCP로 메시지 교환(선택적 암호화). API(어떤 forwarding 동작 지정)이자 프로토콜(통신) 둘 다 → 헷갈림 주의"] },
+        { "name": "controller-to-switch 메시지", "children": [
+          "features(스위치 능력 질의/응답), configure",
+          { "name": "modify-state (가장 중요)", "children": ["flow table 엔트리 추가/삭제/수정"] },
+          "packet-out(특정 포트로 패킷 내보내기)"
+        ]},
+        { "name": "asynchronous (switch-to-controller) 메시지", "children": [
+          { "name": "packet-in", "children": ["테이블에 매칭 룰 없는 패킷을 '주인님 이것 좀 봐주세요'하며 컨트롤러로 올림"] },
+          "flow-removed(엔트리 삭제됨), port-status(포트 변화 보고)"
+        ]},
+        { "name": "제어/데이터평면 상호작용 예 (Dijkstra link-state on SDN)", "children": [
+          "① S1 링크 장애 → OpenFlow port-status로 컨트롤러에 통지",
+          "② 컨트롤러가 링크 상태 정보 갱신",
+          "③ 등록된 Dijkstra 라우팅 응용 호출",
+          "④ 응용이 그래프·링크상태 읽어 새 경로 계산",
+          "⑤ flow-table 계산 컴포넌트와 상호작용 → 새 flow table 계산",
+          "⑥ 컨트롤러가 OpenFlow로 새 테이블을 스위치에 설치"
+        ]},
+        { "name": "교수 스킵 명시", "children": ["'시험에도 이거 외워서 쓰라는 말씀은 안 드릴 테니' → modify-state, packet-in 의미만, 메시지 목록 암기 X"] }
+      ]
+    },
+    {
+      "name": "ICMP — IP의 짝꿍(companion) ★★★",
+      "children": [
+        { "name": "ICMP 풀이/역할은?", "children": ["Internet Control Message Protocol. IP가 데이터 배달, ICMP는 배달사고 보고자"] },
+        { "name": "배달사고 보고의 의미는?", "children": [
+          "IP 데이터그램이 가다 죽으면 그것을 만든 end-host(PC·스마트폰)에게 통보 → 원인 고치게 함",
+          "라우터가 임의로 만드는 일은 거의 없음. 되돌리려는 게 아니라 원인 통지"
+        ]},
+        { "name": "계층 위치는? (오답 단골)", "children": [
+          "ICMP 메시지는 IP 데이터그램에 실려 전달됨(network-layer, IP '위')",
+          "인터넷의 유일한 교통수단 = IP 데이터그램"
+        ]},
+        { "name": "메시지 형식은?", "children": ["type(대분류) + code(소분류) + checksum + 에러 유발 IP 데이터그램의 앞 8바이트"] },
+        { "name": "ICMP의 두 역할은?", "children": [
+          { "name": "① 배달사고 보고 (현재 주역할)", "children": ["unreachable host/network/port/protocol 등 에러 보고"] },
+          { "name": "② 네트워크 정보 획득 (대부분 소멸)", "children": [
+            "ping(echo)만 남음",
+            { "name": "왜 사라졌나?", "children": ["DHCP가 정보 기능 대부분을 흡수"] },
+            { "name": "단, IPv6에서는?", "children": ["ICMP 역할이 다시 커짐(IPv4의 별도 프로토콜 두 개를 흡수) → 죽는 프로토콜 아님"] }
+          ]}
+        ]},
+        { "name": "주요 Type/Code는? (시험 빈출)", "children": [
+          { "name": "8 / 0", "children": ["echo request (ping 발송)"] },
+          { "name": "0 / 0", "children": ["echo reply (ping 응답)"] },
+          { "name": "3 / 0", "children": ["dest network unreachable"] },
+          { "name": "3 / 1", "children": ["dest host unreachable"] },
+          { "name": "3 / 2", "children": ["dest protocol unreachable (TCP/UDP 없음)"] },
+          { "name": "3 / 3 (단골)", "children": ["dest port unreachable (해당 포트에 프로세스 없음)"] },
+          { "name": "4 / 0", "children": ["source quench (혼잡제어 — 현재 미사용)"] },
+          { "name": "11 / 0 (traceroute 핵심)", "children": ["TTL expired"] },
+          { "name": "12 / 0", "children": ["bad IP header"] },
+          { "name": "code 표기 규칙", "children": ["code 세분화 없는 type은 그냥 code=0"] }
+        ]},
+        { "name": "ping 동작 (Wireshark 실습)", "children": [
+          "본인이 Type 8(echo request) 발송 → 상대가 Type 0(echo reply) 응답",
+          "4회 반복 → 총 8개 패킷",
+          { "name": "TTL로 거리 추정", "children": ["응답 IP 헤더 TTL로 추정. 시작값 보통 255/128/64 → TTL 57이면 64에서 출발해 약 7홉"] }
+        ]},
+        { "name": "예상 출제", "children": [
+          "[단답] ping에 쓰이는 ICMP type 2개 → 8(request) / 0(reply)",
+          "[객관식] ICMP는 IP 위에서 IP 데이터그램에 실려 전달된다",
+          "[단답] ICMP의 정보기능이 거의 사라진 이유 → DHCP가 흡수"
+        ]}
+      ]
+    },
+    {
+      "name": "traceroute의 TTL 트릭 ★★★",
+      "children": [
+        { "name": "TTL이란?", "children": [
+          "Time To Live. IP 헤더 필드. 라우터 하나 거칠 때마다 1 감소, 0이면 폐기(연료 고갈/자가파괴)",
+          { "name": "원래 목적은?", "children": ["라우팅 루프에 걸린 패킷 제거"] },
+          { "name": "시작값은?", "children": ["OS별 255/128/64. 인터넷 직경 ≈ 30 이내라 정상이면 0까지 안 떨어짐"] }
+        ]},
+        { "name": "동작 원리는?", "children": [
+          "출발지가 TTL=1, 2, 3…로 늘려가며 전송",
+          "n번째 라우터에서 TTL=0 → 폐기 + ICMP 11/0(TTL expired)을 source로 반환",
+          "그 ICMP의 출발지 주소 = 해당 라우터 IP가 드러남",
+          { "name": "각 set은?", "children": ["보통 probe 3개(왕복 RTT 측정)"] }
+        ]},
+        { "name": "종료 조건 — Windows vs Linux (시험 단골)", "children": [
+          { "name": "Windows", "children": ["ICMP echo request로 구현 → 목적지 도착 시 echo reply"] },
+          { "name": "Linux", "children": ["UDP 데이터그램을 이상한(빈) 포트로 전송 → 목적지 도착 시 ICMP 3/3(port unreachable) 반환 → 종료"] },
+          { "name": "경로 중간은?", "children": ["둘 다 11/0(TTL expired)"] }
+        ]},
+        { "name": "예상 출제", "children": [
+          "[서술] traceroute가 각 라우터 IP를 알아내는 원리를 TTL로 설명",
+          "[객관식] Win vs Linux 종료 신호 구분",
+          "[단답] 목적지 도착을 알리는 ICMP type/code (Linux → 3/3)"
+        ]},
+        { "name": "오답 포인트", "children": ["중간 라우터 = 11/0, 목적지(Linux) = 3/3 혼동 주의"] }
+      ]
+    },
+    {
+      "name": "ICMP 현역성 — MTU / Path MTU Discovery ★★",
+      "children": [
+        { "name": "MTU란?", "children": ["Maximum Transmission Unit. 링크가 한 번에 보낼 수 있는 최대 패킷 크기. 인터넷 통상 ≈ 1500바이트"] },
+        { "name": "단편화(fragmentation)가 왜 부담인가?", "children": ["MTU보다 큰 패킷 도착 시 라우터가 단편화 필요 → 현대 라우터엔 매우 부담(조립라인 line-stop 비유). 1.5MB 파일이 1000조각이면 각 라우터에서 1000번 쪼갬"] },
+        { "name": "Path MTU Discovery란?", "children": ["단편화될 것 같으면 라우터가 패킷을 폐기하고 ICMP 에러로 그 MTU 값을 source에 통지 → source(TCP)가 그 크기에 맞춰 작게 보냄. 현대 TCP가 상시 수행"] }
+      ]
+    },
+    {
+      "name": "네트워크 관리 — Control vs Management ★~★★",
+      "children": [
+        { "name": "Control vs Management 구분은?", "children": [
+          { "name": "Control(제어)", "children": ["개별 메시지/데이터그램과 직접 연관(예: ICMP — 데이터그램이 죽어야 발동)"] },
+          { "name": "Management(관리)", "children": ["데이터 배달과 무관하게 환경(판)을 꾸리고 유지. '쇼가 벌어지기 전 무대를 깔고 관리'"] }
+        ]},
+        { "name": "관리 구성 요소는?", "children": [
+          { "name": "Managed device", "children": ["라우터·스위치·서버, 심지어 TCP/UDP 같은 프로토콜(객체)도 관리 대상"] },
+          { "name": "Managing server/controller", "children": ["보통 1대. 사람(network manager)이 루프에 있음"] },
+          { "name": "Data", "children": ["사용자 데이터 아님. 통계치·상태 변수(uptime)·configuration data(인터페이스 개수 등)"] },
+          { "name": "Agent", "children": ["각 기기에 붙은 작은 SW. 관리는 본연의 역할이 아닌 '혹(overhead)'이라 부담 최소화(해외 주재원 비유)"] }
+        ]},
+        { "name": "관리 프로토콜은?", "children": ["SNMP, NETCONF. 단순하게는 CLI/SSH(급할 때 최고)"] }
+      ]
+    },
+    {
+      "name": "SNMP — 구식·primitive 관리 프로토콜 ★",
+      "children": [
+        { "name": "SNMP의 수준은?", "children": ["Simple Network Management Protocol. 변수 read/write 수준에서만 동작. 버전 1→2→3(보안은 v3)"] },
+        { "name": "두 가지 동작 모드는?", "children": [
+          { "name": "Request/Response", "children": ["관리 서버가 변수 read/write 요청 → agent 처리 → 응답"] },
+          { "name": "Trap", "children": ["관리 서버 요청 없이도 agent가 긴급 상황을 독단적으로 자발 보고"] }
+        ]},
+        { "name": "메시지 타입은?", "children": [
+          "GetRequest / GetNextRequest(트리 DFS상 다음) / GetBulkRequest(블록 일괄) — 읽기",
+          "SetRequest — 쓰기",
+          "Response — 응답",
+          "Trap — 예외 이벤트 자발 보고"
+        ]},
+        { "name": "냉장고 예시 (read/write의 한계)", "children": ["'냉장고 온도' 변수에 -4 write → agent는 변수에 값만 기록. 실제 컴프레서 구동은 냉장고 자체 제어부 몫. SNMP는 변수 조작까지만"] },
+        { "name": "MIB란?", "children": ["Management Information Base. 어떤 기기에서 무엇을 관리할 수 있는가(변수 리스트)를 기술한 문서(프로그램에 비유)"] },
+        { "name": "SMI란?", "children": ["Structure of Management Information. MIB를 작성하는 언어(MIB가 프로그램이면 SMI는 프로그래밍 언어). ASN.1 서브셋"] },
+        { "name": "OID란?", "children": ["Object Identifier. 각 변수를 식별하는 트리 구조 식별자(예: 1.3.6.1.2.1.7.1). '다음 변수' = 트리 DFS상 다음"] },
+        { "name": "교수 스킵 명시", "children": ["SNMP 메시지 포맷/v3 inform 등 → '구닥다리 포맷이라 안 하겠다'"] }
+      ]
+    },
+    {
+      "name": "NETCONF / YANG — 현대 표준 관리 ★",
+      "children": [
+        { "name": "NETCONF의 수준은?", "children": ["현대적·high-level. 변수 read/write가 아니라 configuration 전체를 다룸"] },
+        { "name": "NETCONF 특징은?", "children": [
+          { "name": "High-level 동작", "children": ["configuration을 retrieve/create/modify/activate"] },
+          { "name": "Atomic commit / rollback", "children": ["다중 단계(A→B→C) 작업이 중간 실패 시 전체 롤백. '되면 되고 안 되면 안 됨'(DB의 atomic operation·commit)"] },
+          { "name": "RPC 패러다임", "children": ["Remote Procedure Call(gRPC 아님). 함수가 아닌 procedure 호출 → 복잡 작업 가능"] },
+          "다중 기기 일괄 관리",
+          "XML 인코딩, TLS/SSH 등 보안 전송 위에서 동작"
+        ]},
+        { "name": "YANG이란?", "children": ["NETCONF용 데이터 모델링 언어(SMI가 MIB에 대해 하던 역할을 YANG이 NETCONF에 대해 수행). 데이터 구조·구문·의미·제약 기술, XML 생성"] },
+        { "name": "대응 관계는?", "children": ["SNMP ↔ NETCONF, MIB ↔ (YANG으로 기술된 데이터 모델), SMI ↔ YANG"] },
+        { "name": "비교 요약", "children": ["SNMP = old/primitive(변수 read/write) vs NETCONF/YANG = new/high-level(configuration·atomic·RPC·보안)"] },
+        { "name": "교수 스킵 명시", "children": ["NETCONF/YANG XML 형태·get vs get-config 미세 차이 → '시험에 구분하라고 말씀드리지는 않겠어요'"] }
+      ]
+    },
+    {
+      "name": "교수가 시험에서 제외/스킵 명시한 것",
+      "children": [
+        { "name": "BGP attribute 세부", "children": ["'자세히 외울 필요 없다', '나머지 디테일은 편하게 뛰어넘으세요' → local pref/AS-PATH/NEXT-HOP 순서·직관만, 세부 attribute 암기 X"] },
+        { "name": "hot-potato routing", "children": ["'별로 알아도 별 가치 없는 것, 모르셔도 됩니다' → 개념(뜨거운 감자=빨리 떠넘김)만"] },
+        { "name": "OpenFlow 메시지 세부", "children": ["'시험에도 이거 외워서 쓰라는 말씀은 안 드릴 테니' → modify-state, packet-in 의미만"] },
+        { "name": "NETCONF/YANG XML·get vs get-config", "children": ["'시험에 구분하라고 말씀드리지는 않겠어요' → XML 구문 암기 X"] },
+        { "name": "SNMP 메시지 포맷/v3 inform", "children": ["'구닥다리 포맷이라 안 하겠다'"] },
+        { "name": "SDN 컨트롤러 challenge/기타", "children": ["'그냥 뻔한 이야기들', 미셀러니어스 스킵"] }
+      ]
+    },
+    {
+      "name": "가장 중요한 예상 출제 TOP 4",
+      "children": [
+        { "name": "Q1. OSPF vs BGP 차이 + 왜 2계층으로 나누나? ★★★", "children": [
+          { "name": "모범답 요지", "children": ["OSPF = intra-AS, link-state·Dijkstra로 최단경로(거리·효율). BGP = inter-AS, 정책(policy) 기반(돈·계약·정치). 나누는 이유 3가지 = 정책·규모·성능"] },
+          { "name": "함정", "children": ["BGP에서 '짧은 경로가 1순위'라고 쓰면 오답(평양 직선거리 가까워도 중국 경유)"] }
+        ]},
+        { "name": "Q2. BGP 경로 선택 우선순위 + AS-PATH가 1순위 아닌 이유? ★★★", "children": [
+          { "name": "모범답 요지", "children": ["① local preference(정책) ② shortest AS-PATH ③ closest NEXT-HOP(hot-potato). AS-PATH는 3번째쯤, 최우선은 정책(local pref). BGP는 path-vector·TCP 위 반영구 세션, 핵심 메시지 = UPDATE"] },
+          { "name": "함정", "children": ["'AS-PATH 짧으면 무조건 선택' → 오답. BGP를 UDP라고 하면 오답(TCP)"] }
+        ]},
+        { "name": "Q3. SDN이 대체하는 것/못 하는 것 + 전통 라우팅이 못 하는 것 + 약점? ★★★", "children": [
+          { "name": "모범답 요지", "children": ["OSPF(intra-AS) 대체, BGP 대체 X, 단일 AS 안에서만. 전통 라우팅은 shortest-path tree라 경로 하나뿐 → SDN은 헤더 임의 필드 매칭으로 traffic engineering(부하분산·트래픽별 분기·경로 강제). 약점 = SPOF, 단일 AS 한정"] },
+          { "name": "함정", "children": ["'SDN이 BGP를 대체한다' → 오답. SDN은 라우팅 전용 아님(방화벽·NAT·로드밸런싱)"] }
+        ]},
+        { "name": "Q4. traceroute 원리(TTL·ICMP) + 종료 신호(Win vs Linux)? ★★★", "children": [
+          { "name": "모범답 요지", "children": ["TTL을 1,2,3…로 늘려 전송 → n번째 라우터에서 TTL=0 → 폐기+ICMP 11/0(TTL expired) → 그 ICMP 출발지=라우터 IP. 종료: Windows=echo reply, Linux=ICMP 3/3(port unreachable). 중간은 둘 다 11/0"] },
+          { "name": "함정", "children": ["중간 라우터(11/0)와 목적지 Linux 종료(3/3) 혼동 금지"] }
+        ]}
+      ]
+    },
+    {
+      "name": "★ 시험 포인트 / 자주 헷갈리는 점",
+      "children": [
+        { "name": "intra-AS vs inter-AS", "children": ["intra-AS = OSPF(최단경로), inter-AS = BGP(정책). SDN은 OSPF 대체자일 뿐 BGP는 대체 못 함"] },
+        { "name": "라우팅을 2계층으로 나누는 이유 3가지", "children": ["정책(policy) · 규모(scale) · 성능(performance)"] },
+        { "name": "link-state vs distance-vector", "children": ["OSPF = link-state(전체 맵·Dijkstra), RIP/EIGRP = distance-vector(이웃과 거리벡터 교환)"] },
+        { "name": "OSPF flooding은 무엇 위?", "children": ["IP 위에 직접(TCP/UDP 아님)"] },
+        { "name": "BGP 경로 선택 순서", "children": ["① local preference(정책) ② shortest AS-PATH ③ hot-potato — AS-PATH 길이가 1순위 아님!"] },
+        { "name": "BGP 기본 성질", "children": ["path-vector 프로토콜, TCP 위에서 동작, 반영구 세션"] },
+        { "name": "BGP 메시지 4개", "children": ["OPEN / UPDATE(핵심) / KEEPALIVE / NOTIFICATION(에러→연결 끊김)"] },
+        { "name": "eBGP vs iBGP", "children": ["eBGP(이웃 AS와) vs iBGP(AS 내부 전파). gateway는 둘 다 실행"] },
+        { "name": "stub vs transit", "children": ["stub(출발/도착) vs transit(경유, 통행료). multi-homed = 다중 ISP 연결"] },
+        { "name": "SDN 3요소", "children": ["데이터평면 스위치 / 컨트롤러(network OS) / 네트워크 응용. northbound(응용↔컨트롤러), southbound(컨트롤러↔스위치)"] },
+        { "name": "OpenFlow 핵심 메시지", "children": ["modify-state(테이블 수정), packet-in(매칭 안 되는 패킷 컨트롤러로 올림)"] },
+        { "name": "SDN 약점", "children": ["SPOF(컨트롤러 단일 장애) · 단일 AS로 스케일 제한"] },
+        { "name": "전통 라우팅 한계 vs SDN", "children": ["shortest-path tree라 경로 하나뿐 → SDN은 헤더 필드 fine-grained 매칭으로 traffic engineering"] },
+        { "name": "ICMP 본질", "children": ["IP의 짝꿍, IP 데이터그램에 실려 다님. 메시지엔 에러 유발 IP 데이터그램 첫 8바이트 포함"] },
+        { "name": "ICMP 핵심 type/code", "children": ["8/0(echo req), 0/0(echo reply), 11/0(TTL expired), 3/3(port unreachable). source quench(4/0)는 미사용"] },
+        { "name": "traceroute 종료 신호", "children": ["Windows=echo reply, Linux=ICMP 3/3(port unreachable). 경로 중간은 둘 다 11/0"] },
+        { "name": "ICMP는 죽는 프로토콜?", "children": ["아님 — DHCP가 정보기능 흡수했지만 IPv6에서 역할 부활·확대"] },
+        { "name": "MTU", "children": ["통상 1500B. 단편화는 라우터에 큰 부담 → TCP가 ICMP로 Path MTU 알아내 미리 작게 보냄"] },
+        { "name": "Control vs Management", "children": ["control=개별 데이터그램 사건(ICMP), management=배달과 무관한 환경 구축·유지(SNMP/NETCONF)"] },
+        { "name": "SNMP vs NETCONF/YANG", "children": ["변수 read/write(primitive, old) vs configuration·atomic-commit·RPC·XML·보안(high-level, new)"] },
+        { "name": "관리 용어 대응", "children": ["MIB=관리 가능 항목 기술 문서, SMI=MIB 작성 언어, OID=트리 변수 식별자. 대응: MIB↔YANG-data-model, SMI↔YANG"] },
+        { "name": "SNMP 동작 2모드", "children": ["request/response, trap(자발 보고)"] },
+        { "name": "라우팅 vs 포워딩", "children": ["라우팅=경로 계산(control plane, ms), 포워딩=패킷 이동(data plane, ns). IP는 계산 안 하고 테이블 사용만"] }
+      ]
+    }
+  ]
+}

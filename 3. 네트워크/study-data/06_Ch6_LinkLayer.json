@@ -1,0 +1,417 @@
+{
+  "id": "06_Ch6_LinkLayer",
+  "title": "6장 · 링크 계층 (MAC·이더넷·스위치)",
+  "nodes": [
+    {
+      "name": "0. 시험 범위 한눈에 (교수 명시)",
+      "children": [
+        { "name": "교수가 못박은 출제 범위는?", "children": ["LANs 중 addressing/ARP, Ethernet, switches 위주. MPLS·데이터센터는 제외"] },
+        { "name": "시간 없으면 어디까지?", "children": ["\"LAN(+VLAN 조금)까지만 이해해도 시험 가능. 시간 없으면 LAN까지만 공부하세요.\""] },
+        { "name": "출제 방식은?", "children": ["혼합형(객관식 + 단답/간단 서술형). 챕터 대표개념·원리 이해 위주, 지엽 암기·수식 유도는 안 냄"] },
+        { "name": "교수가 '제일 중요'라 한 3가지는?", "children": [
+          "① 랜덤 액세스 계보 + CSMA/CD vs CSMA/CA 비교 (가장 공들여 구술)",
+          "② 스위치 self-learning 포워딩 + 현대 스위치엔 충돌 없음(\"콜리전 얘기 나오면 무시\")",
+          "③ MAC 주소 / ARP / 이더넷 (슬라이드 메모로 시험 범위 못박음)"
+        ]},
+        { "name": "오늘날 진짜 shared medium은?", "children": ["WiFi 하나만 머리에 두라 (이동통신·현대 이더넷은 사실상 point-to-point)"] }
+      ]
+    },
+    {
+      "name": "1. 링크 계층 개요 & 서비스",
+      "children": [
+        { "name": "링크 계층 한 줄 정의는?", "children": ["인접 노드 간(단 하나의 링크) 프레임 전달을 담당하는 2계층"] },
+        { "name": "계층 위치는?", "children": ["프로토콜 스택 맨 아래에서 두 번째 (물리계층 위, 네트워크/IP 계층 아래)"] },
+        { "name": "용어 (terminology)", "children": [
+          { "name": "노드(node)란?", "children": ["호스트(스마트폰·랩탑·PC)와 라우터를 통칭하는 추상화"] },
+          { "name": "링크(link)란?", "children": ["인접 노드를 잇는 통신 채널 (유선/무선/광/수중 등 매체 다양)"] },
+          { "name": "프레임(frame)이란?", "children": ["2계층 패킷의 별칭. 내부에 IP 데이터그램을 캡슐화"] }
+        ]},
+        { "name": "배달 범위 = 단 하나의 링크 (★중요)", "children": [
+          "링크 계층은 단 한 칸(one hop)만 건너뜀",
+          { "name": "여러 링크를 엮어 망을 만드는 건 누구 일?", "children": ["3계층(IP, Internetworking Protocol)의 일"] },
+          { "name": "★함정", "children": ["\"MAC 주소가 여러 링크를 건너간다\"는 절대 틀림. 링크 하나만 건너감 (교수 반복 강조)"] }
+        ]},
+        { "name": "링크 계층 서비스 (services)", "children": [
+          { "name": "프레이밍 / 링크 접근", "children": ["데이터그램을 프레임으로 캡슐화(헤더·트레일러), MAC 주소로 송/수신자 식별 — 모든 링크"] },
+          { "name": "신뢰성 전송 (reliable delivery)", "children": ["인접 노드 간 신뢰 전송. 저오류 유선엔 거의 안 씀, 고오류 무선엔 필요 — 매체 의존"] },
+          { "name": "흐름 제어 (Flow Control)", "children": ["인접 송·수신 노드 간 전송 속도 조절 — 모든 링크"] },
+          { "name": "오류 검출 (Error Detection)", "children": ["신호 감쇠·잡음 비트 오류 검출 → 재전송 요청 or 프레임 폐기 — 모든 링크"] },
+          { "name": "오류 정정 (Error Correction)", "children": ["재전송 없이 수신측이 비트 오류를 직접 정정 — 드묾"] },
+          { "name": "모든 링크 공통 vs MAC만?", "children": ["오류제어·프레이밍·흐름제어 = 모든 링크 공통 / MAC = broadcast(공유) 링크에서만 필요. point-to-point는 경쟁자 없어 MAC 불필요"] }
+        ]},
+        { "name": "프레이밍 (Framing)", "children": [
+          "IP 데이터그램(payload)을 프레임 짐칸에 싣고, 앞에 헤더·뒤에 트레일러를 붙임",
+          { "name": "이더넷 헤더 3개 필드는?", "children": ["출발지 MAC / 도착지 MAC / type(상위 프로토콜)"] },
+          { "name": "트레일러에 들어가는 건?", "children": ["거의 예외 없이 CRC (오류 검출용)"] },
+          { "name": "왜 하드웨어로 처리?", "children": ["프레이밍은 단순 작업이 아니라 상당한 계산(CRC)이 들어감"] }
+        ]},
+        { "name": "흐름 제어 (Flow Control)", "children": [
+          { "name": "정의는?", "children": ["수신자의 처리 능력에 맞춰 송신자가 전송 속도를 조절 (입 벌린 사람에게 소화전으로 쏘면 안 됨)"] },
+          { "name": "현대 방식은?", "children": ["단순화된 lock-step(스톱앤웨이트): 하나 보내고 ACK 받고 다음 보냄 → 하드웨어 파이프라이닝에 유리"] },
+          { "name": "책임 주체는?", "children": ["흐름 제어·재전송은 송신자(sender) 책임. 수신자는 상황만 알려줌(ACK)"] }
+        ]},
+        { "name": "신뢰성과 계층 간 관계 (★★)", "children": [
+          { "name": "유선 vs 무선 신뢰성?", "children": ["유선(이더넷): 매우 신뢰, BER ≈ 10^-9 / 무선(WiFi): 거리·잡음으로 오류율 높음"] },
+          { "name": "링크 재전송이 실패하면?", "children": ["상위 계층이 다시 시도. 인터넷에선 4계층 TCP가 종단간 재전송 수행"] },
+          { "name": "\"밑(2계층)에서 재전송하는데 왜 위(4계층)에서 또?\"", "children": ["계층별 역할(범위)이 다름. 2계층=한 홉 / 4계층(TCP)=종단간(end-to-end)"] },
+          { "name": "★계층별 신뢰성 정리", "children": [
+            "2계층(링크): 한 홉 (매체에 따라 있을 수도/없을 수도)",
+            "3계층(IP): 신뢰성 없음 = best-effort(\"할 만큼만 한다\")",
+            "4계층(TCP): 종단간(end-to-end) 신뢰성/재전송"
+          ]}
+        ]},
+        { "name": "반이중 vs 전이중 (통신 양상)", "children": [
+          { "name": "심플렉스(simplex)", "children": ["한 방향만 (공중파 방송) — 진정한 통신으로 보기 어려움"] },
+          { "name": "반이중(half-duplex)", "children": ["송/수신 일어나나 동시엔 불가 (워키토키: \"오버\"=채널 넘김)"] },
+          { "name": "전이중(full-duplex)", "children": ["동시 양방향 가능"] },
+          { "name": "★대부분 단말은?", "children": ["대부분 데이터 링크 단말은 half-duplex (WiFi·이더넷·셀룰러 단말). 셀룰러 기지국은 full 능력, 단말은 half"] }
+        ]},
+        { "name": "2계층의 물리적 구현 위치는?", "children": [
+          "두 군데로 나뉘어 구현: 아래쪽 절반 → 하드웨어(NIC), 위쪽 절반 → OS 커널",
+          { "name": "NIC(하드웨어) 담당은?", "children": ["고속 처리 필요한 부분 — CRC 오류 체크 계산, 매체 접근 제어"] },
+          { "name": "device driver(소프트웨어) 담당은?", "children": ["OS 커널에 설치하는 디바이스 드라이버, 링크 계층 기능 일부"] }
+        ]}
+      ]
+    },
+    {
+      "name": "2. 오류 검출 / 정정 (★★)",
+      "children": [
+        { "name": "공통 원리 (EDC + D)", "children": [
+          "EDC(Error Detection/Correction bits, 리던던시) + D(보호 대상 데이터)",
+          "송신: D에 대해 EDC 계산 → <D,EDC> 전송 / 수신: <D',EDC'>로 오류 판정"
+        ]},
+        { "name": "★오류 검출의 비대칭성 (시험 빈출)", "children": [
+          { "name": "검출됨 = ?", "children": ["100% 진짜 오류 (False Positive 없음)"] },
+          { "name": "통과 = ?", "children": ["매우 높은 확률로 정상이나 보장 아님 (False Negative 존재) — 촘촘하나 구멍 뚫린 그물"] },
+          { "name": "★함정", "children": ["\"검출 통과 = 100% 안전\"은 틀림. 확률적으로만 참 (False Negative 존재)"] }
+        ]},
+        { "name": "검출 vs 정정 디자인 선택은?", "children": ["시간 여유 있으면 재전송(왕복 시간 감수), 급하면 오류 정정(리던던시로 즉시 수리). 정정 = 오프로드 차량의 스페어 타이어"] },
+        { "name": "★강도 순서 (패리티 < 체크섬 < CRC)", "children": [
+          "패리티: 단일비트, 짝수 오류에 취약 (가장 약함)",
+          "체크섬: 1의 보수 덧셈, 짝수형 오류 놓침",
+          "CRC: mod 2 나눗셈, r+1 비트 미만 모든 버스트 오류 검출 (가장 강함)"
+        ]},
+        { "name": "패리티 검사 (Parity)", "children": [
+          { "name": "단일 비트 패리티란?", "children": ["데이터에 1비트 리던던트 비트 추가. Even=1의 개수 짝수, Odd=홀수 (둘은 동등)"] },
+          { "name": "무엇을 검출?", "children": ["단일 비트 오류만 검출 가능"] },
+          { "name": "치명적 약점은?", "children": ["짝수 개 비트가 동시에 뒤집히면 검출 실패 (00→11이면 1의 개수 짝수 유지 → 통과)"] },
+          { "name": "2차원 패리티는?", "children": ["행·열 패리티로 단일 비트 검출+정정 가능. 교수: \"크게 나아지지 않아 공부할 가치 적음\""] }
+        ]},
+        { "name": "인터넷 체크섬 (Checksum)", "children": [
+          { "name": "주 사용처는?", "children": ["IP 이상(3·4계층), 특히 UDP/TCP. 데이터 링크 계층에선 거의 안 씀"] },
+          { "name": "동작은?", "children": ["세그먼트를 16비트 정수열로 취급 → 1의 보수 합 계산 → 체크섬 필드에 넣어 전송"] },
+          { "name": "수신측 판정은?", "children": ["받은 세그먼트 전체(체크섬 포함)를 다시 더해 0이면 정상, 0 아니면 오류"] },
+          { "name": "1의 보수 특성 — 0이 두 개?", "children": ["모든 비트 0(+0)과 모든 비트 1(-0)이 모두 0으로 취급 (수신측 합이 1111이어도 정상)"] },
+          { "name": "약점은?", "children": ["짝수형 오류(같은 자릿수 두 비트 교환 등)는 합이 동일해져 검출 실패 (False Negative)"] },
+          { "name": "왜 인터넷은 약한 체크섬을?", "children": ["이미 데이터 링크의 강력한 CRC 그물을 뚫고 올라온 데이터라 오류 확률 매우 낮음 → 가벼운 추가 검사로 충분"] }
+        ]},
+        { "name": "CRC (Cyclic Redundancy Check) — 링크 계층 표준", "children": [
+          { "name": "어디서 쓰나?", "children": ["이더넷, 802.11 WiFi 등 데이터 링크 계층의 표준 오류 검출법"] },
+          { "name": "핵심 연산은?", "children": ["덧셈이 아니라 나눗셈(mod 2) 사용"] },
+          { "name": "구성 요소 (D, G, R)", "children": [
+            "D: 데이터 비트 (이진수로 간주)",
+            "G: 생성기(generator), r+1 비트 (표준에 명시)",
+            "R: r비트 CRC (= 나머지)"
+          ]},
+          { "name": "송신측 계산은?", "children": ["<D,R>이 G로 나누어 떨어지도록 R 계산. R = remainder[(D·2^r)/G]"] },
+          { "name": "수신측 판정은?", "children": ["받은 <D,R>을 같은 G로 나눔 → 나머지 0이면 오류 없음(높은 확률) / 0 아니면 확실한 오류"] },
+          { "name": "검출 능력은?", "children": ["r+1 비트 미만의 모든 버스트 오류(burst error)를 검출 가능"] },
+          { "name": "★mod 2 산술의 특징은?", "children": ["비트가 0/1 둘뿐 → 덧셈 = 뺄셈 = XOR 모두 동일 (1+1=0, carry 없음)"] },
+          { "name": "G(생성기)의 비밀은?", "children": ["아무 숫자가 아니라 검출력 최대화하도록 수학적으로 엄선된 표준값. CRC-32/CRC-16(IEEE 표준)"] }
+        ]},
+        { "name": "★계층별 사용처 (헷갈림 주의)", "children": [
+          { "name": "체크섬은 어느 계층?", "children": ["3·4계층(IP/UDP/TCP). 데이터 링크에선 거의 안 씀"] },
+          { "name": "CRC는 어느 계층?", "children": ["데이터 링크(2계층) 표준 (이더넷, WiFi)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "3. 다중 접속(MAC) 프로토콜 분류 (★★)",
+      "children": [
+        { "name": "MAC 풀네임은?", "children": ["Media(Multiple) Access Control. = MAC 주소의 그 MAC"] },
+        { "name": "링크 두 종류", "children": [
+          { "name": "점대점(point-to-point) 1:1", "children": ["전화 다이얼업(PPP), 현대 스위치-호스트 연결, 이동통신 → MAC 불필요"] },
+          { "name": "브로드캐스트(공유 매체)", "children": ["옛 bus형 이더넷, 케이블 상향 HFC, 802.11 WiFi, 위성 → 충돌 가능 → MAC 필요"] },
+          { "name": "★교수의 분류 보정은?", "children": ["이동통신은 자원을 격자로 격리해 사실상 P2P, 현대 이더넷도 스위치 기반 P2P. 오늘날 진정한 shared medium = WiFi 하나만"] }
+        ]},
+        { "name": "Noise vs Interference vs Collision (★)", "children": [
+          { "name": "Noise(잡음)", "children": ["자연현상(벼락·스파크·열잡음). 통신 주체와 무관"] },
+          { "name": "Interference(간섭)", "children": ["다른 주체의 전송에 의한 장애 (옆자리 손님이 시끄러움)"] },
+          { "name": "Collision(충돌)", "children": ["Interference의 극단형. 둘 이상 동시 전송 → 신호 뒤섞여 아무도 못 알아봄. 이득 보는 자 없음"] }
+        ]},
+        { "name": "이상적 MAC 프로토콜의 조건은?", "children": [
+          "① 1노드 전송 시 전체율 R 사용",
+          "② M노드 시 각 R/M 균등 분배",
+          "③ 완전 분산(중앙 조정 없음)",
+          "④ 단순할 것",
+          { "name": "교수 메모(주의)", "children": ["교재의 \"클럭/슬롯 동기화 불필요\" 항목은 WiFi 실제와 다름(WiFi는 AP 클럭에 철저히 동기화)"] }
+        ]},
+        { "name": "★MAC 3대 분류", "children": [
+          { "name": "① 채널 분할(Channel Partitioning)", "children": [
+            { "name": "핵심 아이디어?", "children": ["채널을 조각내 노드 전용 할당 (TDMA/FDMA/CDMA)"] },
+            { "name": "부하별 특성?", "children": ["고부하: 효율·공평 / 저부하: 비효율(1노드만 있어도 1/N만 씀, 안 쓰는 슬롯·band idle)"] }
+          ]},
+          { "name": "② 랜덤 액세스(Random Access)", "children": [
+            { "name": "핵심 아이디어?", "children": ["분할 안 함, 충돌 허용 후 복구 (ALOHA→S-ALOHA→CSMA→CSMA/CD·CA)"] },
+            { "name": "부하별 특성?", "children": ["저부하: 1노드가 채널 독점 가능 / 고부하: 충돌 오버헤드"] }
+          ]},
+          { "name": "③ 순서 교대(Taking Turns)", "children": [
+            { "name": "핵심 아이디어?", "children": ["돌아가며 전송 (polling, token passing). 위 둘의 장점만 취하려는 절충"] }
+          ]}
+        ]}
+      ]
+    },
+    {
+      "name": "4. 채널 분할 (Channel Partitioning)",
+      "children": [
+        { "name": "TDMA (Time Division)", "children": [
+          { "name": "분할 기준은?", "children": ["시간을 슬롯으로 쪼개 라운드마다 노드별 고정 슬롯 배정. 슬롯 길이 = 1패킷 전송 시간"] },
+          { "name": "단점은?", "children": ["쓰지 않는 슬롯은 idle(자원 낭비) — 내 슬롯인데 보낼 게 없어도 남이 못 씀"] }
+        ]},
+        { "name": "FDMA (Frequency Division)", "children": [
+          { "name": "분할 기준은?", "children": ["주파수 대역(band)을 노드별로 쪼개 할당, 시간축은 연속 사용 (4부 합창처럼 골라 들음)"] },
+          { "name": "단점은?", "children": ["TDMA와 동일 — 안 쓰는 band는 idle"] }
+        ]},
+        { "name": "(참고) CDMA / OFDMA", "children": ["CDMA: 시간·주파수 아닌 코드(code space)로 분할(3G). OFDMA = 4G/5G(결합, 강의 범위 밖)"] }
+      ]
+    },
+    {
+      "name": "5. 랜덤 액세스 (Random Access) — WiFi의 방식 (★★★)",
+      "children": [
+        { "name": "진화 계보는?", "children": ["ALOHA → Slotted ALOHA → CSMA → CSMA/CD(유선·고전 이더넷) / CSMA/CA(무선·WiFi)"] },
+        { "name": "전 과정에 흐르는 공통 DNA는?", "children": ["\"충돌 후 랜덤하게 지연 재전송\""] },
+        { "name": "(Pure) ALOHA", "children": [
+          { "name": "기원은?", "children": ["하와이 대학 개발 → 랜덤 액세스의 효시(섬 캠퍼스 간 저렴한 무선)"] },
+          { "name": "동작은?", "children": ["동기화·슬롯 없음. 데이터 생기면 즉시 전송"] },
+          { "name": "충돌 복구의 핵심은?", "children": ["재전송. 단 고정 지연이면 영원히 재충돌 → 랜덤 지연으로 두 패킷을 떼어 놓음"] },
+          { "name": "최대 효율은?", "children": ["약 18% (Slotted의 절반)"] }
+        ]},
+        { "name": "Slotted ALOHA (★★★)", "children": [
+          { "name": "동작은?", "children": ["시간을 동일 슬롯으로 분할, 노드는 슬롯 시작점에서만 전송 시작(동기화 필요)"] },
+          { "name": "효과는?", "children": ["충돌 시 피해가 슬롯 1칸에만 국한(Pure는 살짝 겹쳐도 둘 다 망함) → 효율 약 2배"] },
+          { "name": "★최대 효율은?", "children": ["1/e ≈ 0.37 (37%)"] },
+          { "name": "★왜 37%가 한계인가? (의미)", "children": ["랜덤 도착 전제에선 아무리 잘해도 채널의 37%만 유용하게 사용. 나머지는 충돌·idle 슬롯으로 낭비"] },
+          { "name": "효율 수식은?", "children": ["성공 확률 Np(1-p)^(N-1), 최적화 후 N→∞에서 1/e ≈ 0.37 (수식은 줄 테니 의미를 알라)"] },
+          { "name": "★함정", "children": ["Pure ≈ 18%, Slotted ≈ 37%를 뒤집지 말 것. \"동기화(슬롯)로 효율 약 2배\""] }
+        ]},
+        { "name": "CSMA (Carrier Sense) — \"Listen Before Talk\" (★★★)", "children": [
+          { "name": "핵심 규칙은?", "children": ["전송 전에 채널을 들어본다(carrier sense). idle이면 전송, busy면 idle 될 때까지 대기"] },
+          { "name": "carrier(반송 주파수)란?", "children": ["신호가 실리는 중심 주파수(sin파). 진폭/주파수/위상 중 하나를 변조해 비트를 실음 → 변조 흔적이 있으면 누가 전송 중인지 감지"] },
+          { "name": "★CSMA도 충돌난다 — 원인은?", "children": ["전파 지연(propagation delay). 멀리 있는 노드의 막 시작한 전송이 아직 안 도달 → 둘 다 idle로 오판 → 충돌"] },
+          { "name": "거리와 충돌 관계는?", "children": ["거리↑ → 전파 지연↑ → 충돌 확률↑"] }
+        ]},
+        { "name": "CSMA/CD (Collision Detection) — 유선/고전 이더넷 (★★★)", "children": [
+          { "name": "무엇을 추가?", "children": ["CSMA + 충돌 탐지. 충돌 즉시 전송 중단(abort) → 채널 낭비 감소"] },
+          { "name": "★충돌 탐지 방법(유선)은?", "children": ["에너지 디텍션 — 내가 혼자 보낼 때 파워보다 수신 파워가 갑자기 커지면 \"나 말고 누가 더 있다\""] },
+          { "name": "이더넷 CSMA/CD 알고리즘", "children": [
+            "① 네트워크 계층에서 datagram 받아 frame 생성",
+            "② 채널 센스: idle → 전송 시작 / busy → idle 될 때까지 대기 후 전송",
+            "③ 충돌 없이 전송 완료 → 끝",
+            "④ 전송 중 충돌 감지 → abort + jam signal(모두에게 \"취소\")",
+            "⑤ abort 후 이진 지수 백오프 진입 → Step ②로 복귀"
+          ]}
+        ]},
+        { "name": "CSMA/CA (Collision Avoidance) — 무선/WiFi (★★★)", "children": [
+          { "name": "★무선은 왜 충돌 탐지(CD) 불가?", "children": ["송신 측은 자기 신호가 가장 크게 들리지만(대북확성기), 수신 상대 신호는 모기 소리만큼 작게 도달 → 자기 송신에 묻혀 충돌 감지 못함"] },
+          { "name": "그래서 거꾸로 어떻게?", "children": ["idle로 판정돼도 바로 안 보내고, 마치 충돌난 듯 먼저 랜덤 백오프(Avoidance) 후 전송 (가위바위보를 미리 해두는 셈)"] }
+        ]},
+        { "name": "★★★ CSMA/CD vs CSMA/CA 한 줄 비교 (시험 빈출)", "children": [
+          { "name": "공통점은?", "children": ["CS(Listen Before Talk) + 랜덤 액세스 DNA(충돌 후 랜덤 백오프)"] },
+          { "name": "★차이(핵심)는?", "children": ["반응 시점 — CD는 충돌 후 reactive(유선, 탐지 가능) / CA는 충돌 전 proactive(무선, 탐지 불가)"] },
+          { "name": "CD = ?", "children": ["유선 = 고전 이더넷 = 충돌 후 reactive 백오프 = 탐지 가능(에너지 디텍션)"] },
+          { "name": "CA = ?", "children": ["무선 = WiFi = 충돌 전 proactive 백오프 = 탐지 불가"] },
+          { "name": "★함정", "children": ["\"무선이 충돌을 탐지한다\"는 틀림(탐지 불가가 CA를 쓰는 이유). CD=유선/CA=무선을 뒤집지 말 것"] }
+        ]},
+        { "name": "(★) 이진 지수 백오프 (binary exponential backoff)", "children": [
+          { "name": "K를 어떻게 고르나?", "children": ["m번째 충돌 후 K를 {0,1,…,2^m-1}에서 랜덤 선택"] },
+          { "name": "얼마나 대기?", "children": ["K·512 bit times 대기 후 다시 시도"] },
+          { "name": "충돌이 잦을수록?", "children": ["선택 범위(풀)가 커져 동일 숫자 고를 확률↓ → 언젠가 다른 숫자 → 작은 값 쪽 승리, 큰 값 쪽은 carrier sense로 양보"] }
+        ]}
+      ]
+    },
+    {
+      "name": "6. 순서 교대 (Taking Turns) (★★)",
+      "children": [
+        { "name": "왜 쓰나(동기)?", "children": ["채널 분할(저부하 비효율)과 랜덤 액세스(고부하 충돌)의 양쪽 장점만 취하려는 절충"] },
+        { "name": "Polling (폴링)", "children": [
+          { "name": "동작은?", "children": ["중앙 controller가 노드들에게 차례로 \"보낼 거 있어?\" 물어보고(poll) 전송 허락"] },
+          { "name": "예시는?", "children": ["Bluetooth(블루투스 스피커 master ↔ 장비), 산업용 버튼 제어(Modbus 등)"] },
+          { "name": "단점은?", "children": ["폴링 오버헤드, 지연(latency), master 단일 장애점(single point of failure)"] },
+          { "name": "장점(산업)은?", "children": ["결정론적(deterministic) 지연 — 한 바퀴 도는 시간이 시간표처럼 정해짐"] }
+        ]},
+        { "name": "Token Passing (토큰 패싱)", "children": [
+          { "name": "동작은?", "children": ["토큰(전송 권리)을 노드 간 순차 전달, 토큰 가진 노드만 전송"] },
+          { "name": "토큰의 실체는?", "children": ["실체 아님 → 패킷 내 특정 비트(예: 1=권리 도착, 0=데이터만 통과)로 표현"] },
+          { "name": "예시는?", "children": ["Token Ring, FDDI"] },
+          { "name": "★단점은?", "children": ["토큰 오버헤드, latency, 토큰 분실 시 재생성 프로토콜 필요(single point of failure)"] }
+        ]},
+        { "name": "★★ 랜덤 액세스의 치명적 약점은?", "children": [
+          "non-deterministic delay — 몇 번 충돌할지 모름 → 전송 완료 시간을 보장할 수 없음",
+          { "name": "그래서 산업/실시간(TSN)은?", "children": ["결정론적인 Taking Turns(polling/token)를 선호"] }
+        ]}
+      ]
+    },
+    {
+      "name": "7. MAC 주소 (Link-Layer Addressing) (★★★)",
+      "children": [
+        { "name": "MAC 계층 위치는?", "children": ["데이터 링크 계층 하위 = MAC 계층. shared medium에만 존재(point-to-point엔 없음). 상위는 framing/error/flow control"] },
+        { "name": "왜 MAC 주소가 필요한가?", "children": ["shared medium(LAN)엔 여러 기기가 매달려 있어, 올라온 패킷을 누가 받아야 할지 식별해야 함 (P2P면 길 하나라 불필요)"] },
+        { "name": "★MAC 주소 vs IP 주소", "children": [
+          { "name": "계층은?", "children": ["MAC = 링크 계층(L2) / IP = 네트워크 계층(L3)"] },
+          { "name": "길이는?", "children": ["MAC = 48-bit(6 byte), 16진(1A-2F-BB-76-09-AD) / IP = 32-bit(128.119.40.136)"] },
+          { "name": "관리 기관은?", "children": ["MAC = IEEE / IP = IANA"] },
+          { "name": "이동성은?", "children": ["MAC = portable(flat 주소, LAN 이동 무관) / IP = non-portable(서브넷 종속)"] },
+          { "name": "비유는?", "children": ["MAC = 주민등록번호(불변) / IP = 우편 주소(위치 종속)"] }
+        ]},
+        { "name": "OUI (할당 구조)", "children": [
+          { "name": "OUI란?", "children": ["48-bit 중 앞 24-bit = OUI(Organizationally Unique Identifier), 제조사별 식별자. IEEE에서 구매"] },
+          { "name": "OUI 하나로 몇 개 확보?", "children": ["MAC 주소 2^24개 (뒤 24-bit는 제조사 자유 배정). 대기업은 여러 OUI 구매"] },
+          { "name": "활용은?", "children": ["DB에 OUI-제조사 기록 → Wireshark로 MAC 보면 어느 회사 장비인지 식별 가능"] }
+        ]},
+        { "name": "NIC란?", "children": ["Network Interface Card. 과거엔 카드(ROM에 MAC 구워짐, 변경 불가). 현대엔 디바이스 드라이버(SW)로 설정·변경 가능"] }
+      ]
+    },
+    {
+      "name": "8. ARP (Address Resolution Protocol) (★★★)",
+      "children": [
+        { "name": "강의 진행 메모", "children": ["강의에선 \"IP 배운 뒤 이해 가능\"하다며 건너뜀. 단 슬라이드 메모상 시험 범위 포함 → 교재 기준 핵심은 숙지"] },
+        { "name": "ARP의 목적은?", "children": ["같은 LAN에서 IP 주소를 알 때 그 MAC 주소를 알아냄 (IP → MAC)"] },
+        { "name": "ARP 테이블 구조는?", "children": ["<IP 주소, MAC 주소, TTL(≈20분)>. TTL 만료 후 매핑 폐기"] },
+        { "name": "★동작 3단계 (A→B, B의 MAC 미상)", "children": [
+          { "name": "① query는 어떻게?", "children": ["A가 ARP query 브로드캐스트 (이더넷 dst = FF-FF-FF-FF-FF-FF, 내부에 B의 IP). LAN 전 노드 수신"] },
+          { "name": "② response는 어떻게?", "children": ["B만 ARP response를 유니캐스트로 A에게 (자신의 MAC 포함)"] },
+          { "name": "③ 그 다음은?", "children": ["A가 응답 수신 → 자신의 ARP 테이블에 B 항목 추가(TTL 부여)"] }
+        ]},
+        { "name": "★query/response 전송 방식 한 줄", "children": ["query = 브로드캐스트 / response = 유니캐스트 (바꿔 쓰지 말 것!)"] },
+        { "name": "★다른 subnet으로 (A→R→B)", "children": [
+          { "name": "프레임의 dst MAC은?", "children": ["\"B\"가 아니라 first-hop 라우터 R의 MAC"] },
+          { "name": "R에서 무슨 일?", "children": ["R이 프레임 수신 → datagram을 IP로 올림 → 새 프레임 생성(dst MAC = B의 MAC) → B로 전달"] },
+          { "name": "★핵심 원리는?", "children": ["IP 주소(src/dst)는 종단까지 불변, MAC 주소는 매 홉(hop)마다 바뀜"] },
+          { "name": "★함정", "children": ["매 홉 바뀌는 건 MAC(IP가 아님)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "9. 이더넷 (Ethernet) (★★★)",
+      "children": [
+        { "name": "이더넷이란?", "children": ["가장 지배적인 유선 LAN 기술. 단순·저렴, 10 Mbps → 400 Gbps 진화. 발명자 Bob Metcalfe(2022 튜링상)"] },
+        { "name": "LAN 역사 메모", "children": ["2계층 기술만으로 국소 네트워크 구성 가능. 인터넷 성공 이전에 LAN(특히 이더넷)이 먼저 성공"] },
+        { "name": "물리 토폴로지 변천", "children": [
+          { "name": "버스(bus)", "children": ["~90년대 중반까지. 동축케이블에 뱀파이어 탭으로 연결. 모든 노드가 동일 collision domain → 서로 충돌 가능"] },
+          { "name": "스위치트(switched)", "children": ["현재 주류. 중앙에 능동 2계층 스위치, 각 spoke가 독립 → 노드 간 충돌 없음"] },
+          { "name": "옛 버스형에 MAC 주소가 왜 필요했나?", "children": ["한 구리선에 모두 매달려 신호가 모두에게 들림 → MAC 주소로 \"내 프레임인지\" 판별. 지금은 구식"] }
+        ]},
+        { "name": "★이더넷 프레임 구조", "children": [
+          { "name": "★필드 순서는?", "children": ["preamble → 목적지 MAC → 출발지 MAC → type → data(payload) → CRC (목적지가 먼저!)"] },
+          { "name": "★Preamble(8 byte, 물리계층) 2역할", "children": [
+            { "name": "구성은?", "children": ["10101010 ×7 byte + 마지막 1 byte 10101011"] },
+            { "name": "역할 ① 프레임 도착 알림", "children": ["조용하던 선에 신호 등장을 수신기가 감지(\"기차 들어온다\"). 마지막 바이트 패턴이 \"프리앰블 끝\" 표시"] },
+            { "name": "역할 ② 클럭 동기화", "children": ["잦은 edge로 수신자 시계를 송신자 속도에 맞춤. 어긋나면 비트 폭 오판으로 101을 1011처럼 잘못 읽음"] }
+          ]},
+          { "name": "dest/source address (각 6 byte MAC)", "children": ["어댑터는 목적지 MAC이 자신/브로드캐스트(FF-FF-FF-FF-FF-FF)면 상위계층 전달, 아니면 프레임 폐기(discard)"] },
+          { "name": "type(2 byte)란?", "children": [
+            "상위계층 프로토콜 식별 → 수신측 demultiplexing (이더넷은 \"대중교통\"처럼 여러 프로토콜 운반)",
+            { "name": "주요 값은?", "children": ["0x0800 = IPv4 / 0x8100 = 802.1Q VLAN 태그 (ARP도 별도 값)"] }
+          ]},
+          { "name": "CRC는?", "children": ["수신측 오류검출. 에러 검출 시 프레임 drop"] },
+          { "name": "★함정(필드 순서)", "children": ["출발지가 먼저가 아니라 목적지가 먼저. 교재 self-learning 그림은 뒤바뀐 오타(교수 지적)"] }
+        ]},
+        { "name": "이더넷의 성질", "children": [
+          { "name": "connectionless란?", "children": ["송수신 NIC 간 핸드셰이킹 없음"] },
+          { "name": "unreliable란?", "children": ["수신 NIC가 ACK/NAK를 보내지 않음. drop된 데이터는 상위계층 rdt(TCP)가 있어야 복구"] },
+          { "name": "★교수의 단서는?", "children": ["unreliable·CSMA/CD는 옛 버스형 이더넷 이야기. 현대 스위치트 이더넷은 거의 reliable·충돌 없음 → 너무 무게 두지 말 것"] },
+          { "name": "802.3 명명규칙 예 (100BASE-TX)", "children": ["100 = 100Mbps, BASE = baseband, T = twisted pair 구리, F/X = 광섬유"] }
+        ]}
+      ]
+    },
+    {
+      "name": "10. 스위치 (Ethernet Switch) (★★★)",
+      "children": [
+        { "name": "스위치란?", "children": ["2계층(링크) 능동 장비 = \"교차로\" 비유. 프레임 MAC 주소를 보고 하나 이상의 출력 포트로 선택 전송"] },
+        { "name": "transparent(투명)이란?", "children": ["호스트는 스위치 존재를 인지 못함 — 마치 직접 연결된 것처럼 느낌"] },
+        { "name": "plug-and-play / self-learning이란?", "children": ["별도 설정 없이 꽂기만 하면 동작, 포워딩 테이블을 스스로 학습"] },
+        { "name": "★충돌 없음 (현대 스위치)", "children": [
+          { "name": "왜 충돌이 없나?", "children": ["호스트는 스위치에 전용(dedicated) 직접 연결 → full-duplex(2차선 도로) → 충돌 불가"] },
+          { "name": "★슬라이드의 collision domain/CSMA-CD 문구는?", "children": ["무시하라 — 현대 스위치엔 충돌 없음 (\"콜리전 얘기 나오면 무시하라\" 반복 강조)"] }
+        ]},
+        { "name": "★동시 전송 가능?", "children": [
+          { "name": "언제 동시 OK?", "children": ["목적지(출력 포트)가 다르면 동시 OK (A→A', B→B' 동시 가능)"] },
+          { "name": "언제 버퍼링?", "children": ["같은 출력 포트 경쟁 시(A→A', C→A') → 스위치가 버퍼에 잠시 대기"] }
+        ]},
+        { "name": "★switch table & Self-Learning", "children": [
+          { "name": "switch table 항목 구성은?", "children": ["(호스트 MAC 주소, 도달 포트(interface), timestamp/TTL). 초기 테이블 empty"] },
+          { "name": "★self-learning은 무엇을 보고 학습?", "children": ["출발지(source) MAC + 들어온 포트를 기록 → \"이 MAC은 이 포트 방향\""] },
+          { "name": "★함정", "children": ["학습 기준은 목적지가 아니라 출발지 MAC"] }
+        ]},
+        { "name": "★프레임 필터링/포워딩 알고리즘", "children": [
+          "① 들어온 링크와 송신 호스트 MAC 주소 기록(학습)",
+          "② 목적지 MAC으로 switch table 색인",
+          { "name": "③ 항목이 있으면?", "children": ["도착한 그 세그먼트가 목적지면 → drop(되돌려 보낼 필요 없음), 아니면 해당 인터페이스로 forward"] },
+          { "name": "④ 항목이 없으면?", "children": ["flood — 도착 인터페이스 제외 모든 포트로 전송"] },
+          { "name": "flooding은 비효율 아닌가?", "children": ["처음 한 번뿐 → 해당 호스트만 받고 나머진 무시. 응답 오면 그 위치도 학습"] }
+        ]},
+        { "name": "다중 스위치 상호연결은?", "children": ["self-learning 스위치들을 연결해도 단일 스위치와 동일 원리. 트래픽 오갈 때마다 각 스위치가 점진적으로 \"지도\" 완성 → 어떤 토폴로지든 설정 없이 동작"] },
+        { "name": "★★ 스위치 vs 라우터 (시험 단골)", "children": [
+          { "name": "계층은?", "children": ["스위치 = 2계층(링크) / 라우터 = 3계층(네트워크)"] },
+          { "name": "검사 헤더는?", "children": ["스위치 = 링크계층 헤더(MAC) / 라우터 = 네트워크계층 헤더(IP)"] },
+          { "name": "테이블 생성은?", "children": ["스위치 = flooding·self-learning(MAC) / 라우터 = 라우팅 알고리즘 계산(IP)"] },
+          { "name": "★공통점은?", "children": ["둘 다 store-and-forward, 둘 다 forwarding table 보유"] }
+        ]}
+      ]
+    },
+    {
+      "name": "11. VLAN (Virtual LAN) (★★)",
+      "children": [
+        { "name": "VLAN 동기(motivation)는?", "children": [
+          "단일 broadcast domain 문제: 모든 2계층 브로드캐스트(ARP, DHCP)가 LAN 전체를 가로질러야 함 → scaling/보안/프라이버시 문제",
+          { "name": "관리(administrative) 이슈?", "children": ["CS 사용자가 EE 스위치로 물리 이동해도 논리적으로는 CS에 남고 싶음"] }
+        ]},
+        { "name": "Port-based VLAN이란?", "children": [
+          { "name": "동작은?", "children": ["스위치 SW로 포트를 그룹화 → 단일 물리 스위치가 여러 가상 스위치처럼 (예: 포트 1–8 = EE, 9–15 = CS)"] },
+          { "name": "traffic isolation이란?", "children": ["1–8 포트 프레임은 1–8에만 도달. 논리적 \"벽\"을 침"] },
+          { "name": "양방향 가상화란?", "children": ["① 한 물리 스위치를 쪼개 여러 VLAN으로, ② 여러 물리 스위치를 묶어 하나의 VLAN으로"] }
+        ]},
+        { "name": "★VLAN 간 통신에 필요한 것은?", "children": ["라우팅 필요 (별개 스위치처럼 취급, L2 격리). 실무선 스위치+라우터 결합 제품 판매"] },
+        { "name": "★802.1Q 태그 (4 byte)", "children": [
+          { "name": "어디에 삽입?", "children": ["기존 이더넷 프레임의 type 자리에 4 byte 태그 삽입(백워드 호환 위해 기본 골격 유지)"] },
+          { "name": "TPID (2 byte)란?", "children": ["Tag Protocol Identifier. 값 0x8100 → \"이것은 VLAN 프레임\" 신호"] },
+          { "name": "TCI (2 byte)란?", "children": ["Tag Control Information. 12 bit VLAN ID(어느 VLAN인지) + 3 bit priority(IP TOS 유사)"] },
+          { "name": "CRC는?", "children": ["재계산(Recomputed)"] }
+        ]},
+        { "name": "(참고) trunk port란?", "children": ["여러 물리 스위치에 걸친 VLAN 간 프레임 운반. VLAN ID 정보를 실어야 함"] }
+      ]
+    },
+    {
+      "name": "12. (참고/시험 비중 낮음) 교수가 제외/스킵 명시",
+      "children": [
+        { "name": "MPLS는?", "children": ["굳이 이해 안 해도 괜찮다. 인터넷 중심부 심화. 개념만 알고 넘어가라. (고정 길이 label 20bit로 고속 IP 포워딩)"] },
+        { "name": "데이터센터 네트워크는?", "children": ["\"시험에 안 나올 거예요.\" 구조만(Fat-Tree, TOR 등)"] },
+        { "name": "EVPN / VXLAN은?", "children": ["아주 코너 케이스. \"IP 안에 이더넷\"(역캡슐화·터널링) — 일반적 캡슐화와 반대"] },
+        { "name": "기타 제외 항목은?", "children": ["CDMA/OFDMA 세부, 2차원 패리티, 케이블 HFC 상세, G 선발의 수학 이론 → 강의/시험 범위 밖"] }
+      ]
+    },
+    {
+      "name": "★ 시험 포인트 / 자주 헷갈리는 점",
+      "children": [
+        { "name": "TOP1. CSMA/CD vs CSMA/CA 차이 (★★★ 서술)", "children": ["둘 다 CS(Listen Before Talk)+랜덤 백오프. 차이=반응 시점: CD=유선·충돌 후 reactive(탐지 가능) / CA=무선·탐지 불가라 충돌 전 proactive. \"무선이 탐지한다\"는 틀림"] },
+        { "name": "TOP2. 스위치 self-learning + 충돌 (★★★)", "children": ["출발지 MAC + 입력 포트로 학습(목적지 아님). 목적지 모르면 flood. 현대 스위치엔 충돌 없음(전용 full-duplex)"] },
+        { "name": "TOP3. 오류 검출 3종 강도 순 (★★★)", "children": ["패리티 < 체크섬 < CRC. 검출됨=100% 오류 / 통과=확률적 정상(False Negative 존재). \"통과=100% 안전\"은 틀림"] },
+        { "name": "TOP4. ARP + 매 홉 바뀌는 주소 (★★)", "children": ["query=브로드캐스트 / response=유니캐스트. A→R→B: IP는 종단까지 불변, MAC은 매 홉 바뀜"] },
+        { "name": "Slotted ALOHA 효율", "children": ["1/e ≈ 37% (Pure ≈ 18%). 뒤집지 말 것. 랜덤 도착 전제라 충돌·idle로 37%가 한계"] },
+        { "name": "CSMA도 충돌난다", "children": ["원인은 전파 지연(propagation delay). 거리↑ → 충돌 확률↑"] },
+        { "name": "이더넷 프레임 필드 순서", "children": ["목적지 MAC → 출발지 MAC → type → data → CRC (목적지가 먼저!)"] },
+        { "name": "preamble 2역할", "children": ["① 프레임 도착 알림 ② 클럭 동기화 (물리계층 소속)"] },
+        { "name": "type 필드 값", "children": ["0x0800=IPv4, 0x8100=802.1Q VLAN 태그. demultiplexing 용도"] },
+        { "name": "링크 계층 배달 범위", "children": ["단 하나의 링크(one hop). \"MAC이 여러 링크 건너간다\"는 틀림. 다중 링크는 3계층(IP) 일"] },
+        { "name": "계층별 신뢰성", "children": ["2계층=한 홉 / 3계층(IP)=best-effort(신뢰성 X) / 4계층(TCP)=종단간"] },
+        { "name": "체크섬 vs CRC 계층", "children": ["체크섬→3·4계층(IP/UDP/TCP) / CRC→데이터 링크(이더넷·WiFi). 헷갈리지 말 것"] },
+        { "name": "CRC 연산", "children": ["덧셈 아니라 mod 2 나눗셈(덧셈=뺄셈=XOR). G는 표준 엄선 생성기(CRC-32/16)"] },
+        { "name": "스위치 vs 라우터", "children": ["스위치=2계층 MAC·self-learning / 라우터=3계층 IP·라우팅. 둘 다 store-and-forward"] },
+        { "name": "MAC vs IP 주소", "children": ["MAC=48bit·IEEE·휴대(주민번호) / IP=32bit·IANA·서브넷 종속(우편주소)"] },
+        { "name": "랜덤 액세스 최대 약점", "children": ["non-deterministic delay(전송 시간 보장 불가) → 산업/실시간은 polling·token(결정론적)"] },
+        { "name": "VLAN 간 통신", "children": ["라우팅 필요(L2 격리). 802.1Q = TPID(0x8100) + TCI(12bit VLAN ID + 3bit priority), CRC 재계산"] },
+        { "name": "MAC은 언제 필요?", "children": ["broadcast(공유) 매체에서만. point-to-point엔 불필요. 오늘날 진짜 shared medium = WiFi"] }
+      ]
+    }
+  ]
+}
