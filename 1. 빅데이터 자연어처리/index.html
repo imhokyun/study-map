@@ -34,7 +34,7 @@
 
 <main class="px-5 py-6 pb-24 max-w-5xl">
   <p class="text-gray-400 text-sm mb-4">노드를 <b class="text-gray-200">클릭</b>하면 펼쳐지고 다시 클릭하면 접힙니다. ▶ 표시가 있는 항목만 하위 내용이 있어요.</p>
-  <div class="inline-block bg-spine text-white font-bold text-lg px-5 py-2.5 rounded-xl shadow-lg mb-5" id="rootLabel">빅데이터 자연어처리</div>
+  <div class="inline-block bg-spine text-white font-bold text-lg px-5 py-2.5 rounded-xl shadow-lg mb-5" id="rootLabel">학습맵</div>
   <ul id="tree" class="list-none m-0 p-0"></ul>
 </main>
 
@@ -147,7 +147,7 @@ async function load(){
       `<li class="text-red-300 text-sm leading-relaxed">⚠️ 데이터를 불러오지 못했습니다.<br>
        브라우저는 보안상 <code class="bg-black/40 px-1 rounded">file://</code>에서 로컬 JSON을 막습니다.
        아래처럼 <b>로컬 서버</b>로 여세요:<br><br>
-       <code class="bg-black/40 px-2 py-1 rounded block w-fit">cd "1. 빅데이터 자연어처리" &amp;&amp; python3 -m http.server 8000</code>
+       <code class="bg-black/40 px-2 py-1 rounded block w-fit">cd "(이 과목 폴더)" &amp;&amp; python3 -m http.server 8000</code>
        <br>그 뒤 <code class="bg-black/40 px-1 rounded">http://localhost:8000</code> 접속.<br>
        <span class="text-gray-500">(에러: ${err})</span></li>`;
   }
