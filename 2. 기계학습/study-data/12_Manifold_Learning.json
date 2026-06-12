@@ -231,6 +231,92 @@
       ]
     },
     {
+      "name": "★ 이 챕터 핵심 출제 포인트 (중요도순)",
+      "children": [
+        { "name": "출제 형식은?", "children": ["4지선다 개념 위주 / 수식 계산·유도 없음 / 기호는 '의미'만 묻는다. 교수가 구두로 가장 세게 강조한 것 = t-SNE의 고차원=가우시안 / 저차원=t-분포 방향 (1순위 출제 후보)"] },
+        { "name": "★★★ t-SNE 분포 방향 + 그 이유?", "children": ["고차원=가우시안(국소 이웃 보존), 저차원=t-분포(Crowding Problem 해결). 방향 뒤바꾸기 함정 1순위"] },
+        { "name": "★★★ 매니폴드 가설 + 선형 vs 비선형 구분?", "children": ["PCA·MDS=선형 / t-SNE·UMAP·Autoencoder=비선형. Swiss roll 펼침 가능/불가능으로 자주 물음"] },
+        { "name": "★★★ t-SNE = 거리 아닌 '확률(유사도)' 보존, 핵심 목적은?", "children": ["국소 이웃(Neighbor) 구조 보존. 'Stochastic(확률)/Neighbor(이웃)' 이름 풀이"] },
+        { "name": "★★ MDS의 정체?", "children": ["거리(pairwise distance) 보존 / 입력이 거리 행렬(좌표 아님) / 유클리디안 거리면 MDS=PCA"] },
+        { "name": "★★ Perplexity의 의미?", "children": ["유효 이웃 수(effective number of neighbors) → σ를 간접 지정"] },
+        { "name": "★★ Autoencoder 핵심?", "children": ["입력차원=출력차원, 병목(bottleneck) 은닉층으로 압축, 재구성 오차 최소화. 병목 역할이 핵심"] },
+        { "name": "★ UMAP?", "children": ["비선형, 그래프 구조 보존 + 교차 엔트로피 / t-SNE보다 최신(2018)"] },
+        { "name": "★ MDS의 Gram 행렬 vs PCA의 공분산 행렬?", "children": ["Gram=점×점(내적), 공분산=변수×변수. 의미 구분"] }
+      ]
+    },
+    {
+      "name": "개념별 출제 각도 / 오답 포인트",
+      "children": [
+        { "name": "★★★ 1. 매니폴드 가설 & 매니폴드 정의", "children": [
+          { "name": "의미?", "children": ["데이터는 고차원(이미지 수백만 픽셀·음성·언어 임베딩·센서)으로 표현되지만 의미 있는 변화(meaningful variation)는 훨씬 낮은 차원의 매끄러운 곡면(manifold) 위에 있다. 매니폴드 = 국소적으로(locally) 저차원처럼 행동하는 매끄러운(휘어진) 공간. 예: Swiss roll은 3D에 박혀 있지만 본질은 2D 곡면"] },
+          { "name": "차원 축소와의 차이?", "children": ["차원 축소='어떤 차원 남길까', 매니폴드 학습='데이터 구조(기하/위상)를 어떻게 보존할까'. 실무적으론 거의 같은 트랙(시각화 용도)"] },
+          { "name": "오답 포인트?", "children": ["'매니폴드는 전역적으로 저차원이다' (X, 국소적으로) / '매니폴드 가설은 데이터가 고차원 전체를 자유롭게 채운다는 것' (X, 정반대)"] },
+          { "name": "예상 출제 각도?", "children": ["'매니폴드의 정의로 옳은 것은?' → 국소적으로 저차원처럼 행동하는 매끄러운 공간 / '의미 있는 변화가 저차원에 있다는 가정의 이름은?' → 매니폴드 가설"] }
+        ]},
+        { "name": "★★★ 2. 선형 vs 비선형 (PCA·MDS=선형 / t-SNE·UMAP=비선형)", "children": [
+          { "name": "의미?", "children": ["PCA = 선형 매니폴드 학습. 데이터가 저차원 선형 부분공간(linear subspace)에 있다고 가정. 비선형으로 휘어진 매니폴드는 못 펼침. Swiss roll을 PCA로 투영하면 직선으로 뭉개버려(X-Z 평면 정사영) gradient 정보 손실. t-SNE/UMAP은 비선형이라 휘어진 구조·이웃 관계를 살림"] },
+          { "name": "오답 포인트?", "children": ["'t-SNE는 선형 기법' (X, 비선형) / 'PCA로 Swiss roll을 잘 펼칠 수 있다' (X, 못 펼침)"] },
+          { "name": "예상 출제 각도?", "children": ["'Swiss roll을 제대로 펼칠 수 없는 기법은?' → PCA(또는 classical MDS) / '다음 중 선형 기법만 묶은 것은?' → PCA, MDS"] }
+        ]},
+        { "name": "★★★ 3. t-SNE 핵심 — 확률로 유사도 표현, 이웃 구조 보존", "children": [
+          { "name": "의미?", "children": ["이름 풀이: t-distributed(저차원에 t-분포), Stochastic(거리 아닌 확률로 유사도 표현), Neighbor Embedding(국소 이웃 구조 보존이 핵심 목적). MDS는 거리로 직접 기하 재구성, t-SNE는 관계를 확률 분포로 모델링하고 두 분포를 맞춘다"] },
+          { "name": "절차 의미?", "children": ["① 고차원 유사도 분포 p ② 저차원 유사도 분포 q ③ KL 발산(KL divergence) 최소화 → 두 분포를 비슷하게. 최적화는 경사하강법"] },
+          { "name": "오답 포인트?", "children": ["'t-SNE는 거리를 직접 보존한다' (X, 그건 MDS / t-SNE는 확률·유사도) / 't-SNE의 핵심은 전역 구조 보존' (X, 국소 이웃 구조)"] },
+          { "name": "예상 출제 각도?", "children": ["'t-SNE가 데이터 관계를 표현하는 방식은?' → 거리가 아니라 확률(유사도) / '두 확률분포 차이를 측정하는 데 쓰는 것은?' → KL divergence"] }
+        ]},
+        { "name": "★★★ 4. (최중요) 왜 고차원=가우시안, 저차원=t-분포인가", "children": [
+          { "name": "의미?", "children": ["고차원=가우시안: 거리에 따라 급격히 감소하는 종 모양 → 가까운 점만 높은 확률, 먼 점은 거의 0 → 국소(local) 이웃 정보에 집중('Neighbor Embedding'의 근거). 저차원=Student's t-분포: 가우시안보다 꼬리가 두껍다(heavy tail) → Crowding Problem(밀집 문제) 해결: 고차원 정보를 저차원에 욱여넣으면 점들이 부자연스럽게 뭉치는데, t-분포의 두꺼운 꼬리가 점들을 더 퍼지게 해 뭉침 완화"] },
+          { "name": "오답 포인트?", "children": ["'고차원=t-분포, 저차원=가우시안' (X, 방향 정반대 = 대표 오답) / '저차원에 t-분포를 쓰는 이유는 국소 보존' (X, 국소 보존은 고차원 가우시안 역할 / t-분포는 Crowding 해결)"] },
+          { "name": "예상 출제 각도?", "children": ["'저차원에 t-분포를 쓰는 이유는?' → Crowding Problem 해결(heavy tail로 점들 덜 뭉치게) / '고차원에서 가우시안을 쓰는 이유는?' → 국소 이웃 보존(급격히 감소)"] }
+        ]},
+        { "name": "★★ 5. MDS (다차원 척도법) — 거리 보존", "children": [
+          { "name": "의미?", "children": ["점들 간 거리(pairwise distance)를 최대한 보존하며 저차원(2D/3D)에 배치. 매니폴드 학습 중 가장 간단·빠른 고전 기법. 입력이 특이: 데이터 좌표가 아니라 비유사도/거리 행렬(N×N)이 주어짐(좌표 없어도 거리만 있으면 됨)"] },
+          { "name": "절차 의미?", "children": ["거리 → 이중 중심화(double-centering) → Gram 행렬 B=XXᵀ → 고유분해 → 좌표 복원. 큰 고유값 방향만 골라 저차원 표현"] },
+          { "name": "★ MDS=PCA 조건?", "children": ["유클리디안 거리를 쓰면 MDS 결과 = PCA 결과(동일). 접근은 다르지만 같은 답. 무조건이 아니라 '유클리디안 거리'일 때"] },
+          { "name": "오답 포인트?", "children": ["'MDS는 데이터 좌표가 입력' (X, 거리·비유사도 행렬) / 'MDS는 항상 PCA와 같다' (X, 유클리디안 거리일 때만) / 'classical MDS는 비선형 구조를 잘 잡는다' (X, 선형이라 실패)"] },
+          { "name": "예상 출제 각도?", "children": ["'MDS의 입력으로 옳은 것은?' → 거리(비유사도) 행렬 / '유클리디안 거리 MDS와 동일한 결과를 내는 기법은?' → PCA / 'MDS가 보존하려는 것은?' → 점 간 거리"] }
+        ]},
+        { "name": "★★ 6. Perplexity의 의미", "children": [
+          { "name": "의미?", "children": ["t-SNE의 유일하게 사용자가 정하는 핵심 하이퍼파라미터. p, q 자체엔 조절 파라미터가 없고 고차원 가우시안의 σᵢ(점마다 다름)를 우리가 정해야 함. σ를 직접 고르는 대신 perplexity를 지정하면 각 점의 σ가 자동 결정. 의미 = 각 점이 고려하는 유효 이웃 수(effective number of neighbors)"] },
+          { "name": "perplexity와 σ 관계?", "children": ["작은 σ=낮은 perplexity(매우 국소), 큰 σ=높은 perplexity(넓은 이웃). 정답값 없음 → 여러 값 실험 후 시각화 보고 선택"] },
+          { "name": "오답 포인트?", "children": ["'perplexity는 출력 차원 수' (X) / 'perplexity는 직접 σ가 아니라 σ를 간접 지정' 헷갈림 주의"] },
+          { "name": "예상 출제 각도?", "children": ["'perplexity가 의미하는 것은?' → 유효 이웃 수(간접적으로 σ 조절) / 'perplexity가 클 때는?' → 큰 σ=넓은 이웃"] }
+        ]},
+        { "name": "★★ 7. Autoencoder (자기연상 신경망)", "children": [
+          { "name": "의미?", "children": ["신경망으로 차원 축소/매니폴드 학습. 출력 유닛 수 = 입력 유닛 수, 입력을 그대로 재구성(reconstruct)하도록 학습. 학습 목표 = 재구성 오차 최소화"] },
+          { "name": "병목(bottleneck)의 역할?", "children": ["은닉층 차원 M < 입력 차원 D. 차원이 좁아 완벽 재구성 불가 → 가장 중요한 구조만 보존, 덜 중요한 변화는 버림 → 저차원 표현 학습. 은닉층 여러 개 + 비선형 활성화 → 비선형 매니폴드 학습 가능(깊을수록 표현력↑='딥'). Hinton & Salakhutdinov(2006): MNIST에서 PCA보다 분리 더 잘함"] },
+          { "name": "오답 포인트?", "children": ["'병목 때문에 출력 차원이 입력보다 작다' (X, 입력=출력 차원, 작은 건 중간 은닉층) / '오토인코더는 항상 선형이다' (X, 비선형 활성화로 비선형 가능)"] },
+          { "name": "예상 출제 각도?", "children": ["'병목 은닉층의 역할은?' → 중요 정보만 압축(저차원 표현 학습) / '입력·출력 차원 관계는?' → 같다 / '학습 목표는?' → 재구성 오차 최소화"] }
+        ]},
+        { "name": "★ 8. UMAP", "children": [
+          { "name": "의미?", "children": ["위상수학(topology) 기반 비선형 차원 축소. t-SNE보다 최신(2018), 로직은 t-SNE와 유사. k-최근접 이웃(k-NN)으로 국소 그래프 → 저차원에서 같은 구조 재현(국소 연결성 보존)"] },
+          { "name": "t-SNE와의 차이?", "children": ["t-SNE=확률분포 정의+KL 발산 최소화 / UMAP=가중 그래프(graph) 구조 구성 후 그 구조 보존, 목적함수는 교차 엔트로피(cross-entropy)"] },
+          { "name": "오답 포인트?", "children": ["'UMAP의 목적함수는 KL 발산' (X, 교차 엔트로피) / 'UMAP의 a, b는 사용자가 정하는 하이퍼파라미터' (X, 자동 결정 / 하이퍼파라미터는 k, min_dist)"] },
+          { "name": "예상 출제 각도?", "children": ["'UMAP의 목적함수는?' → 교차 엔트로피 / 't-SNE와 UMAP의 차이는?' → 확률분포+KL vs 그래프 구조+교차 엔트로피 / 'UMAP에서 자동 결정되는 것은?' → a, b"] }
+        ]},
+        { "name": "★ 9. 공분산 vs Gram 행렬", "children": [
+          { "name": "의미?", "children": ["공분산 = 변수(feature)×변수 관계(PCA가 분해), Gram = 점(data)×점 내적/유사도(MDS가 분해). PCA는 XᵀX(차원×차원), MDS는 XXᵀ(점×점) — 전치 위치만 다름"] },
+          { "name": "오답 포인트?", "children": ["'Gram 행렬은 변수 간 관계' (X, 점 간) / '공분산은 점 간 내적' (X, 변수 간)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "⚠️ 객관식 함정 포인트",
+      "children": [
+        { "name": "t-SNE 분포 방향 뒤바꾸기 (1순위 함정)", "children": ["'고차원=t-분포, 저차원=가우시안' → 오답. 정답은 고차원=가우시안 / 저차원=t-분포"] },
+        { "name": "t-분포 쓰는 이유 혼동", "children": ["'국소 보존을 위해 t-분포' → 오답. t-분포는 Crowding Problem 해결(heavy tail). 국소 보존은 고차원 가우시안의 역할"] },
+        { "name": "선형/비선형 분류", "children": ["PCA·MDS=선형(Swiss roll 못 펼침), t-SNE·UMAP·Autoencoder(비선형 활성화)=비선형. 't-SNE는 선형' → 오답"] },
+        { "name": "MDS 입력", "children": ["'MDS는 데이터 좌표가 입력' → 오답. 입력은 거리(비유사도) 행렬"] },
+        { "name": "거리 보존 vs 이웃 확률 보존", "children": ["MDS=거리 보존 / t-SNE=이웃 유사도를 확률로 보존. 서로 바꾸면 오답"] },
+        { "name": "공분산 vs Gram 행렬", "children": ["공분산=변수(feature)×변수 관계(PCA), Gram=점(data)×점 내적/유사도(MDS). 의미 바꾸면 오답"] },
+        { "name": "PCA=MDS 조건", "children": ["무조건 같은 게 아니라 유클리디안 거리일 때 동일"] },
+        { "name": "목적함수 혼동", "children": ["t-SNE=KL 발산 / UMAP=교차 엔트로피. 바꾸면 오답"] },
+        { "name": "Perplexity 의미", "children": ["'perplexity는 출력 차원 수' → 오답. 유효 이웃 수(σ 간접 지정)"] },
+        { "name": "Autoencoder 차원", "children": ["'병목 때문에 출력 차원이 입력보다 작다' → 오답. 입력=출력 차원, 작은 건 중간 은닉층(병목)"] },
+        { "name": "UMAP a, b", "children": ["'a, b는 사용자가 정하는 하이퍼파라미터' → 오답. 자동 결정. 하이퍼파라미터는 k, min_dist"] }
+      ]
+    },
+    {
       "name": "★ 시험 포인트 / 자주 헷갈리는 점",
       "children": [
         { "name": "★★★ (최중요) t-SNE 분포 방향", "children": [
@@ -271,6 +357,16 @@
           { "name": "오답 함정", "children": ["'병목 때문에 출력 차원이 입력보다 작다' → 오답. 입력=출력 차원, 작은 건 중간 은닉층(병목)"] }
         ]},
         { "name": "매니폴드 학습의 용도", "children": ["시각화 목적으로도 널리 사용 (MNIST 2D 임베딩, 신경망 activation 분석 등)"] }
+      ]
+    },
+    {
+      "name": "✅ 셀프 체크 (반드시 답할 수 있어야 함)",
+      "children": [
+        { "name": "Q1. t-SNE에서 고차원·저차원에 각각 어떤 분포를 쓰고, 그 이유(국소 이웃 보존 / Crowding Problem)를 분포에 맞게 짝지을 수 있는가?", "children": ["고차원=가우시안(국소 이웃 보존, 거리에 따라 급격히 감소) / 저차원=Student t-분포(Crowding Problem 해결, heavy tail로 덜 뭉치게)"] },
+        { "name": "Q2. PCA·MDS·t-SNE·UMAP·Autoencoder를 선형/비선형으로 분류하고, Swiss roll을 누가 못 펼치는가?", "children": ["선형 = PCA·MDS / 비선형 = t-SNE·UMAP·Autoencoder. Swiss roll 못 펼치는 기법 = PCA(또는 classical MDS)"] },
+        { "name": "Q3. MDS의 입력과 보존 대상은? 그리고 '유클리디안 MDS=PCA'는 무슨 뜻인가?", "children": ["입력=거리(비유사도) 행렬, 보존 대상=점 간 거리. 유클리디안 거리를 쓰면 MDS 결과가 PCA와 수학적으로 동일(공분산 XᵀX vs Gram XXᵀ, 전치 위치만 다름)"] },
+        { "name": "Q4. Perplexity는 무엇을 의미하고 무엇(σ)을 간접 조절하는가? t-SNE와 UMAP의 목적함수 차이는?", "children": ["perplexity=유효 이웃 수, 각 점의 σ를 간접 지정. t-SNE=KL 발산 / UMAP=교차 엔트로피"] },
+        { "name": "Q5. Autoencoder에서 병목 은닉층의 역할과 입력=출력 차원 조건은?", "children": ["병목(M<D) = 가장 중요한 구조만 보존(저차원 표현 학습), 덜 중요한 변화는 버림. 입력 차원 = 출력 차원, 작은 건 중간 은닉층(병목)이지 출력이 아님"] }
       ]
     }
   ]

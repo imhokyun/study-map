@@ -100,18 +100,11 @@
         ]},
         { "name": "\"프로토콜은 어디에나 있다\"", "children": [
           "HTTP·스트리밍 비디오·Skype·TCP·IP·WiFi·4/5G·Ethernet…"
-        ]},
-        { "name": "인터넷 표준화 기구·문서는?", "children": [
-          { "name": "RFC (Request for Comments)", "children": ["표준 문서, 번호 붙여 아카이브"] },
-          { "name": "IETF (Internet Engineering Task Force)", "children": [
-            "표준 제정 기구 (연 3회 회의)",
-            "\"Task Force\"는 군대 용어 — 인터넷이 美 국방성 산물이었던 흔적"
-          ]}
         ]}
       ]
     },
     {
-      "name": "★★ 네트워크 엣지 — 호스트·액세스망·물리매체",
+      "name": "★★ 네트워크 엣지 — 호스트·액세스망",
       "children": [
         { "name": "호스트(엣지) vs 코어 구분 (★헷갈림)", "children": [
           "호스트 = 클라이언트·서버 (서버는 주로 데이터센터에 위치)",
@@ -126,86 +119,10 @@
             "주거용(residential)", "기관(institutional, 학교·회사)", "모바일(mobile, WiFi·4G/5G)"
           ]}
         ]},
-        { "name": "★ 액세스 기술별 특징 (표→노드)", "children": [
-          { "name": "Cable (HFC: hybrid fiber coax)", "children": [
-            "케이블TV망 활용, FDM(주파수분할)으로 데이터·TV를 다른 주파수에 실음",
-            "비대칭: 다운 40Mbps~1.2Gbps, 업 30~100Mbps",
-            "케이블 헤드엔드(CMTS)까지 공유(shared)"
-          ]},
-          { "name": "DSL (digital subscriber line)", "children": [
-            "기존 전화선 활용, 음성/데이터를 다른 주파수로 중앙국(DSLAM)까지 전용선(dedicated) 전송",
-            "다운 24~52Mbps, 업 3.5~16Mbps. 데이터→인터넷, 음성→전화망"
-          ]},
-          { "name": "Home network (홈네트워크)", "children": [
-            "cable/DSL 모뎀 + 라우터/방화벽/NAT + WiFi AP + 유선 Ethernet이 한 박스에 통합 (= 인터넷 공유기 = 엣지 라우터)"
-          ]},
-          { "name": "Wireless (무선 액세스)", "children": [
-            "base station(AP) 경유",
-            "WLAN(WiFi): 건물 내(~수십m), 802.11b/g/n = 11·54·450Mbps",
-            "Cellular(4G/5G): 이동통신사 제공, 수십 km 반경, 수십 Mbps"
-          ]},
-          { "name": "Enterprise (기업망)", "children": [
-            "회사·대학, 유·무선 혼합 + 스위치·라우터 혼합. 대학망도 엔터프라이즈 네트워크",
-            "Ethernet(100M·1G·10Gbps), WiFi AP"
-          ]},
-          { "name": "Data center network", "children": [
-            "고대역폭 링크(10s~100s Gbps)로 수천 대 서버 상호연결 + 인터넷 연결",
-            "여전히 액세스망(서버=엔드호스트). AI로 트래픽 폭증 → 광 스위치 등 특수 장비"
-          ]}
-        ]},
-        { "name": "★ WiFi vs Cellular 핵심 차이는? (교수 강조)", "children": [
-          "WiFi = AP 근처(좁은 범위)만 가능",
-          "Cellular = 핸드오버(handover/handoff)로 기지국→기지국 옮겨가며 이동 중에도 사용 가능 → 진정한 이동성",
-          "이동통신 세대(10년 주기): 1G(80s)·2G(90s)·3G(2000s)·4G(2010s)·5G(2020s)·6G(~2030)"
-        ]},
         { "name": "호스트의 패킷 전송 동작", "children": [
           "응용 메시지를 받음 → L bits 길이의 작은 조각(패킷)으로 분할 → 전송률 R로 액세스망에 전송",
           "패킷 전송 지연(transmission delay) = L/R 초",
           "R = link transmission rate = link capacity = link bandwidth (단위: bps)"
-        ]}
-      ]
-    },
-    {
-      "name": "★ 물리 매체 (Physical Media)",
-      "children": [
-        { "name": "bit / physical link 개념", "children": [
-          "bit: 송신기/수신기 쌍 사이를 전파(propagate)",
-          "physical link: 송수신기 사이에 놓인 매체"
-        ]},
-        { "name": "guided vs unguided media", "children": [
-          "guided media(유선): 고체 매체로 신호 전파 — copper·fiber·coax",
-          "unguided media(무선): 자유 공간으로 전파 — radio (교수: 실제로 잘 안 쓰는 용어)"
-        ]},
-        { "name": "매체별 특징 (표→노드)", "children": [
-          { "name": "Twisted Pair (TP, 꼬임쌍선)", "children": [
-            "절연된 구리선 2가닥을 꼬아 외부 간섭을 균등하게 받게 함",
-            "Cat5=100M·1G Ethernet, Cat6=10G Ethernet. 이더넷에 많이 사용"
-          ]},
-          { "name": "Coaxial cable (동축케이블)", "children": [
-            "같은 축(同軸)의 구리 도체 2개, 양방향, broadband(여러 주파수 채널)",
-            "옛 케이블TV에 사용"
-          ]},
-          { "name": "Fiber optic (광섬유)", "children": [
-            "유리 섬유로 빛 펄스 전송(펄스 1개=1 bit), 굴절률 차이로 빛이 새지 않고 선을 따라감(전반사)",
-            "고속(10s~100s Gbps), 저오류, 리피터 간격 넓음, 전자기 노이즈 면역"
-          ]},
-          { "name": "Radio (무선)", "children": [
-            "전자기파 스펙트럼의 \"band\"에 신호 실음, 물리적 선 없음",
-            "broadcast·half-duplex, 전파 환경 영향(반사·차단·간섭·노이즈)"
-          ]}
-        ]},
-        { "name": "신호(signal) vs 비트(bit) — 교수 보충", "children": [
-          "자연계에 비트는 없음(비트는 머릿속 관념)",
-          "전송 시 비트를 자연현상(전자기파·빛 등)으로 표현한 \"신호\"로 보냄",
-          "봉화대(연기 패턴)·깃발 색깔 비유 — 약속된 해석이 있어야 정보가 됨"
-        ]},
-        { "name": "Transceiver / duplex", "children": [
-          "Transceiver = transmitter + receiver",
-          "무선기기는 보통 half-duplex(송신 중 수신 불가). 기지국은 full-duplex이나 스마트폰은 가성비 때문에 half-duplex"
-        ]},
-        { "name": "대역폭(bandwidth) 두 의미는?", "children": [
-          "CS에서는 bps, 전기/전자공학에서는 Hz — 둘은 정비례",
-          "Shannon 채널용량 C = B·log₂(1+S/N): SNR이 클수록 속도↑ (외워 쓰는 문제 X, 정비례 의미만)"
         ]}
       ]
     },
@@ -312,20 +229,8 @@
         ]},
         { "name": "★ 왜 full mesh로 다 연결 안 하나? (단답)", "children": [
           "N개 노드를 완전 연결하면 링크 수 = N(N-1)/2 = O(N²) → 확장 불가(doesn't scale)",
-          "그래서 스위칭으로 전용선을 돌려쓰며 연결"
-        ]},
-        { "name": "연결 구성요소 (용어)", "children": [
-          { "name": "IXP (Internet eXchange Point)", "children": ["ISP들이 모여 트래픽 교환하는 지점"] },
-          { "name": "Peering link / peering", "children": ["ISP끼리 직접 연결하는 것"] },
-          { "name": "Regional ISP", "children": ["액세스망을 상위 ISP에 연결하는 중간 지역망"] }
-        ]},
-        { "name": "구조 진화 단계", "children": [
-          "① global transit ISP 하나에 연결 → ② 경쟁사 등장(ISP A/B/C) → ③ IXP·peering link로 ISP끼리 연결 → ④ regional ISP가 액세스망 연결 → ⑤ content provider network(Google·MS·Akamai) 자체망 구축"
-        ]},
-        { "name": "💡 traceroute 실연 (교수 강조)", "children": [
-          "tracert(Windows) / traceroute(Unix) → 목적지까지 거치는 라우터(홉, hop)들을 보여줌",
-          "예: 집(KT) → 피사대학(이탈리아) 약 19홉. 태평양·대서양 건널 때 지연 점프(propagation delay)",
-          "거쳐간 ISP: KT → Seaborn(대륙 간 해저케이블 backbone) → GARR(이탈리아 내부) — 여러 ISP가 연결됨을 눈으로 확인"
+          "그래서 스위칭으로 전용선을 돌려쓰며 연결",
+          "IXP(Internet eXchange Point)·peering(ISP 직접 연결)으로 묶음"
         ]}
       ]
     },
@@ -358,10 +263,6 @@
             "용량에 가까워질수록 급속도로 치솟음(교통체증 비유)"
           ]}
         ]},
-        { "name": "💡 실측: traceroute / ping", "children": [
-          "같은 홉이라도 3번 측정값이 매번 다름(예: 419/331/342 ms) → 큐잉 지연의 변동",
-          "traceroute는 TTL=i인 패킷 3개씩 보내고 응답시간 측정 (`* * *` = 무응답)"
-        ]},
         { "name": "Packet loss", "children": [
           "링크 앞 버퍼(유한 용량) 꽉 차면 도착 패킷 drop. 유실 패킷은 이전 노드/소스가 재전송하거나 안 할 수도"
         ]},
@@ -373,26 +274,6 @@
             "공유 시: 10개 연결이 backbone 링크 R 공유 → per-connection = min(R_c, R_s, R/10). 실무에선 보통 R_c·R_s가 병목"
           ]},
           { "name": "★ 오답 포인트", "children": ["throughput은 합이 아니라 min(병목)"] }
-        ]}
-      ]
-    },
-    {
-      "name": "★ 보안 (교수: 맛보기 — 자세히는 Ch8)",
-      "children": [
-        { "name": "인터넷과 보안 설계", "children": [
-          "인터넷은 처음부터 보안을 고려해 설계되지 않음 — 초기엔 \"서로 신뢰하는 ~80명 연구자\" 네트워크",
-          "보안은 bolted-on(덧붙임) ↔ built-in의 반대. 뒤늦게 catch-up으로 추가 (현재 모든 RFC에 Security 섹션 필수)"
-        ]},
-        { "name": "공격 유형 (용어)", "children": [
-          { "name": "Packet sniffing (스니핑)", "children": ["공유 매체(이더넷/무선)에서 promiscuous 모드로 지나는 패킷(비밀번호 포함!)을 다 읽음 (예: Wireshark)"] },
-          { "name": "IP spoofing (스푸핑)", "children": ["가짜 출발지 주소로 \"남인 척\" 패킷 주입"] },
-          { "name": "DoS / DDoS", "children": ["가짜 트래픽으로 자원(서버·대역폭) 마비 → 정상 트래픽 차단. ① 타깃 선정 ② 봇넷 장악 ③ 패킷 폭주"] }
-        ]},
-        { "name": "방어선 (lines of defense)", "children": [
-          { "name": "Authentication (인증)", "children": ["주장하는 본인이 맞는지 확인 (SIM 카드, 패스워드)"] },
-          { "name": "Confidentiality (기밀성)", "children": ["암호화(encryption)"] },
-          { "name": "Integrity check (무결성)", "children": ["디지털 서명으로 변조 탐지/방지"] },
-          { "name": "Access restriction / Firewall", "children": ["VPN(비밀번호 보호) / 방화벽(off-by-default 미들박스, DoS 탐지·대응)"] }
         ]}
       ]
     },
@@ -476,18 +357,6 @@
       ]
     },
     {
-      "name": "✂️ 교수가 시험에서 제외/스킵 명시한 것",
-      "children": [
-        "인터넷 역사(History): \"따분하다\", \"그냥 뛰어넘어 볼게요\" → 명시적 스킵 (ARPAnet 1969, TCP/IP 1983, 1990s 상업화 정도만)",
-        "보안(Security): \"이 클래스(1장)에서 다룰 이야기 아니다\", \"맛보기\" → 자세히는 Ch8. 용어만 가볍게",
-        "Circuit switching 세부: \"현대엔 거의 할 이유 없어진 기술\" → packet과의 차이만, 세부 메커니즘 X",
-        "Cut-through switching: \"이 책에서는 다루고 있지 않습니다\"",
-        "큐잉 이론 수식 유도: \"자세하게 말씀 안 드리겠다\" → 개념(랜덤성 폭증)만",
-        "Shannon 채널용량 C=B·log₂(1+S/N): \"여담\" → 외워 쓰는 문제 X, bandwidth가 bps/Hz 두 뜻이고 정비례라는 의미만",
-        "전파 패턴·셀룰러 세부, 데이터센터 광스위치·guided/unguided 용어: 1장 출제 아님"
-      ]
-    },
-    {
       "name": "🔥 가장 중요한 예상 출제 TOP 4",
       "children": [
         { "name": "1. [단답] 프로토콜의 3요소를 쓰고 설명하시오", "children": [
@@ -523,8 +392,6 @@
         { "name": "프로토콜 3요소", "children": ["메시지 형식(format)·교환 순서(order)·수신 시 행동(action)"] },
         { "name": "inter+net / IP", "children": ["network of networks, \"inter+net\"의 의미, IP = Internetworking Protocol"] },
         { "name": "호스트(엣지) vs 코어", "children": ["서버·데이터센터도 엣지, 엔터프라이즈·모바일망도 엣지. 코어는 주로 national/global ISP"] },
-        { "name": "액세스망 Cable vs DSL", "children": ["Cable = 공유·FDM·비대칭 / DSL = 전용(dedicated)"] },
-        { "name": "WiFi vs Cellular", "children": ["핸드오버 유무 = 진정한 이동성 차이"] },
         { "name": "Forwarding vs Routing", "children": ["forwarding = 로컬(테이블로 출력링크 선택) / routing = 전역(경로 전체 계산). 라우팅이 먼저"] },
         { "name": "store-and-forward", "children": ["패킷 전체 도착 후 전송 → 전송지연 L/R. 디지털이라 가능(아날로그 회선엔 없음)"] },
         { "name": "d_trans vs d_prop", "children": ["d_trans=L/R(링크에 싣는 시간) vs d_prop=d/s(매체 가로지르는 시간). 독립적·혼동 금지"] },
@@ -536,8 +403,6 @@
         { "name": "캡슐화 순서·헤더 역할", "children": ["M→Ht|M→Hn|Ht|M→Hl|Hn|Ht|M. 헤더 핵심 역할 = 목적지 주소(Network 헤더=목적지 IP)"] },
         { "name": "Switch(L2) vs Router(L3)", "children": ["스위치=Link까지, 라우터=Network/IP까지 처리"] },
         { "name": "ISP 계층 / full mesh", "children": ["local<regional<national<global(Tier-1), KT=national. Full mesh는 N(N-1)/2=O(N²)라 불가 → IXP/peering"] },
-        { "name": "OSI 7 vs 인터넷 5", "children": ["presentation·session이 인터넷 스택엔 없음"] },
-        { "name": "bandwidth 두 뜻", "children": ["CS=bps vs 전자공학=Hz (Shannon C=B·log₂(1+S/N)로 정비례)"] },
         { "name": "⚠️ 수업 진행 순서", "children": ["다음부터 Ch6→5→4→3→2 (bottom-up). 세션 번호 ≠ 챕터 번호"] }
       ]
     }

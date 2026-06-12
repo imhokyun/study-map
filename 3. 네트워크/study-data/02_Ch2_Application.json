@@ -103,20 +103,10 @@
           { "name": "보장하는 것", "children": ["신뢰성, flow control(흐름제어), congestion control(혼잡제어), 연결설정, in-order delivery"] },
           { "name": "보장 안 하는 것", "children": ["timing(타이밍), 최소 throughput(처리량), security(보안)"] }
         ]},
-        { "name": "전송 서비스 요구 4요소는?", "children": [
-          { "name": "data integrity(무결성)", "children": ["은행 송금은 100% 신뢰 필요, 오디오/비디오는 약간 손실 허용"] },
-          { "name": "timing(지연)", "children": ["실시간 응용은 낮은 지연 필요"] },
-          { "name": "throughput(처리량)", "children": ["파일 다운로드는 다다익선(elastic), 오디오/비디오는 일정량 이상이면 불필요"] },
-          { "name": "security(보안)", "children": ["암호화·인증 등"] }
-        ]},
         { "name": "★ 헷갈림 포인트", "children": [
           { "name": "VoIP(인터넷 전화)는 UDP? TCP?", "children": ["둘 다 — 시그널링(전화 걸기/받기 신호)은 손실되면 안 되므로 TCP, 음성 전달은 UDP"] },
           { "name": "게임은 UDP? TCP?", "children": ["대부분 TCP (TCP가 빠르게 복구한다고 봄, WoW 등 한두 게임만 UDP). 최근 영상회의·줌강의 늘며 UDP 증가"] },
           { "name": "DNS TTL과 IP TTL은?", "children": ["서로 다름 — 혼동 금지 (아래 DNS 캐싱 참조)"] }
-        ]},
-        { "name": "TLS는 어디에 구현되나?", "children": [
-          "응용계층에 구현(TLS 라이브러리가 TCP를 사용) — 암호화된 TCP 연결, 무결성, 종단 인증 제공",
-          { "name": "왜 필요?", "children": ["vanilla TCP/UDP는 암호화 없음 → 평문 비밀번호가 그대로 인터넷 통과. 자세한 건 Ch8"] }
         ]},
         { "name": "예상 출제", "children": [
           "[단답] 'DNS가 UDP를 사용하는 세 가지 경우를 쓰세요' — 최우선",
@@ -350,8 +340,7 @@
           { "name": "로컬(local) = 디폴트 네임 서버", "children": [
             "호스트가 질의를 맨 먼저 보내는 서버",
             { "name": "★ 계층에 속하나?", "children": ["엄밀히 속하지 않음. 교수: '로컬은 부적절, 정확히는 디폴트(default) 네임 서버'"] },
-            { "name": "왜 '로컬'이 어폐?", "children": ["집 KT는 168.126.63.1/.2지만 8.8.8.8(구글) 등 멀리 있는 서버로 바꿀 수 있으니 '로컬'은 어폐"] },
-            { "name": "찾는 법", "children": ["macOS: scutil --dns / Windows: ipconfig /all"] }
+            { "name": "왜 '로컬'이 어폐?", "children": ["집 KT는 168.126.63.1/.2지만 8.8.8.8(구글) 등 멀리 있는 서버로 바꿀 수 있으니 '로컬'은 어폐"] }
           ]}
         ]},
         { "name": "★ 이름 해석: iterative vs recursive", "children": [
@@ -372,8 +361,7 @@
           { "name": "TTL(Time To Live)이란?", "children": ["캐시 엔트리 만료 시간"] },
           { "name": "★ DNS TTL vs IP TTL", "children": ["서로 다름 — 혼동 금지! (IP 헤더의 TTL과 전혀 별개)"] },
           { "name": "out-of-date 문제는?", "children": ["원본이 바뀌어도 TTL 만료 전엔 옛 값 유지 → 변경 임박 시 TTL을 짧게 내려 캐시를 빨리 버리게 함. 결론: DNS는 best-effort 번역"] },
-          { "name": "루트 우회는?", "children": ["TLD 서버 정보는 보통 로컬에 캐시되어 루트 서버를 우회(bypass)"] },
-          { "name": "캐시 확인/비우기", "children": ["ipconfig /displaydns(확인), ipconfig /flushdns(비움)"] }
+          { "name": "루트 우회는?", "children": ["TLD 서버 정보는 보통 로컬에 캐시되어 루트 서버를 우회(bypass)"] }
         ]},
         { "name": "★ 자원 레코드(RR): (name, value, type, ttl)", "children": [
           { "name": "A 타입", "children": ["name=호스트명, value=IPv4 주소 — 기본 번역 (nslookup 기본 질의)"] },
@@ -382,13 +370,6 @@
           { "name": "MX 타입", "children": ["name=도메인, value=SMTP 메일서버 이름 — preference 값 작을수록 우선"] },
           { "name": "CNAME 타입", "children": ["name=별칭(alias), value=본명(canonical name) — www.ibm.com → servereast.backup2.ibm.com"] },
           { "name": "★ NS vs A 구분", "children": ["NS = 서버 이름 / A = 서버 IP"] }
-        ]},
-        { "name": "nslookup 실연", "children": [
-          { "name": "set type=A", "children": ["korea.ac.kr → IPv4 주소(163.152.x.x). AAAA는 없으면 무응답"] },
-          { "name": "set type=MX", "children": ["korea.ac.kr → 메일서버 5개(고대는 Gmail에 위탁 → ...mx.l.google.com, preference=1이 1순위)"] },
-          { "name": "set type=NS", "children": ["네임 서버 2대(kucc...korea.ac.kr)"] },
-          { "name": "set type=CNAME", "children": ["www.yahoo.com → 본명 반환(...yahooDNS.net, 사람이 외우기 힘든 이름)"] },
-          { "name": "서버 변경", "children": ["server 8.8.8.8(구글) 등으로 질의 서버를 바꿔 비교 가능"] }
         ]},
         { "name": "★ DNS 메시지 형식", "children": [
           { "name": "query와 reply의 포맷은?", "children": ["같은 포맷, 헤더 + 바디"] },
@@ -401,12 +382,6 @@
             "④ Additional RR(예: MX 답에 곁들인 메일서버 IP)"
           ]},
           { "name": "재미있는 점은?", "children": ["응답에도 질문을 복창해서 적음 ('너 이거 물었지? 답은 이거야')"] }
-        ]},
-        { "name": "등록 & 보안", "children": [
-          { "name": "등록(registration)이란?", "children": ["RR을 zone 파일에 넣는 행위. 도메인 등록기관(예: Network Solutions)에 등록(유료)"] },
-          { "name": "등록 예시", "children": ["networkutopia.com 등록 → TLD에 NS RR·A RR 삽입, 자기 authoritative 서버에 www의 A·도메인의 MX 생성"] },
-          { "name": "DNS 보안 위협", "children": ["DDoS(루트/TLD 폭격), 스푸핑/캐시 포이즈닝(가짜 응답)"] },
-          { "name": "DNSSEC란?", "children": ["[RFC 4033] 인증·메시지 무결성 제공"] }
         ]},
         { "name": "★ 헷갈림 정리", "children": [
           "① DNS TTL ≠ IP TTL",
@@ -511,41 +486,6 @@
           "[객관식] 공간/시간 압축 구분 · CBR vs VBR · 지터버퍼 역할 · DASH의 지능=클라이언트 · enter deep vs bring home",
           "[단답] DASH manifest의 역할"
         ]}
-      ]
-    },
-    {
-      "name": "8. 클라이언트-서버 vs P2P 패러다임 ★",
-      "children": [
-        { "name": "클라이언트-서버 정리", "children": ["서버 always-on, 영구 IP·고정 위치·고정 포트, 데이터센터. 클라이언트끼리 직접 통신 불가(게임도 서버 매개 간접 통신)"] },
-        { "name": "P2P 정리", "children": ["동등한 peer끼리 직접 교환. 자기 확장성. 단 완전 무서버 아님 — 디렉터리/트래커 서버 필요"] },
-        { "name": "예상 출제", "children": ["[객관식/비교] / [단답] P2P 자기확장성이란?"] }
-      ]
-    },
-    {
-      "name": "✂️ 소켓 프로그래밍 (저비중 — 교수 강의 안 함)",
-      "children": [
-        { "name": "출제 비중은?", "children": ["교수: '뒤에 소켓 프로그래밍은 제가 직접 하지 않겠습니다' → 저비중. 단 '소켓 = IP+포트' 식별 개념은 ★★★ 유지(별개 강조)"] },
-        { "name": "소켓 두 타입", "children": ["UDP(비신뢰 datagram) / TCP(신뢰, byte stream)"] },
-        { "name": "UDP 소켓 흐름", "children": [
-          "연결 없음(handshaking 없음). 송신자가 매 패킷마다 목적지 IP+포트 명시",
-          "클라이언트: socket(SOCK_DGRAM) → sendto() → recvfrom()",
-          "서버: socket(SOCK_DGRAM) → bind() → recvfrom()/sendto()"
-        ]},
-        { "name": "TCP 소켓 흐름", "children": [
-          "서버가 welcoming socket 생성 → 클라이언트 connect → 연결 시 서버가 그 클라이언트 전용 새 소켓 생성",
-          "클라이언트: socket(SOCK_STREAM) → connect() → send()/recv()",
-          "서버: socket(SOCK_STREAM) → bind() → listen() → accept() → recv()/send()"
-        ]}
-      ]
-    },
-    {
-      "name": "✂️ 교수가 시험에서 제외/스킵 명시한 것",
-      "children": [
-        { "name": "소켓 프로그래밍", "children": ["UDP/TCP API — 강의 안 함. 단 '소켓 = IP+포트' 개념은 ★★★ 유지"] },
-        { "name": "P2P 분배시간 계산문제", "children": ["'안 내기로 결정' → 수식 유도 X, 선형 vs 로그·자기확장성 개념만"] },
-        { "name": "Security(보안)", "children": ["정보보호 과목에서 자세히. TLS도 개념만(자세한 건 Ch8)"] },
-        { "name": "응용 요구사항 표·세부 분류", "children": ["'구질구질하니 넘어감.' 개념만, 응용별 표 암기 불필요"] },
-        { "name": "전체 방침", "children": ["각 장에서 한두 문제. 대표 개념·가장 중요한 것 위주. 지엽적 함정 없음"] }
       ]
     },
     {

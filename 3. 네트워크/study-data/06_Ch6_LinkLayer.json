@@ -94,8 +94,7 @@
         { "name": "패리티 검사 (Parity)", "children": [
           { "name": "단일 비트 패리티란?", "children": ["데이터에 1비트 리던던트 비트 추가. Even=1의 개수 짝수, Odd=홀수 (둘은 동등)"] },
           { "name": "무엇을 검출?", "children": ["단일 비트 오류만 검출 가능"] },
-          { "name": "치명적 약점은?", "children": ["짝수 개 비트가 동시에 뒤집히면 검출 실패 (00→11이면 1의 개수 짝수 유지 → 통과)"] },
-          { "name": "2차원 패리티는?", "children": ["행·열 패리티로 단일 비트 검출+정정 가능. 교수: \"크게 나아지지 않아 공부할 가치 적음\""] }
+          { "name": "치명적 약점은?", "children": ["짝수 개 비트가 동시에 뒤집히면 검출 실패 (00→11이면 1의 개수 짝수 유지 → 통과)"] }
         ]},
         { "name": "인터넷 체크섬 (Checksum)", "children": [
           { "name": "주 사용처는?", "children": ["IP 이상(3·4계층), 특히 UDP/TCP. 데이터 링크 계층에선 거의 안 씀"] },
@@ -134,11 +133,6 @@
           { "name": "브로드캐스트(공유 매체)", "children": ["옛 bus형 이더넷, 케이블 상향 HFC, 802.11 WiFi, 위성 → 충돌 가능 → MAC 필요"] },
           { "name": "★교수의 분류 보정은?", "children": ["이동통신은 자원을 격자로 격리해 사실상 P2P, 현대 이더넷도 스위치 기반 P2P. 오늘날 진정한 shared medium = WiFi 하나만"] }
         ]},
-        { "name": "Noise vs Interference vs Collision (★)", "children": [
-          { "name": "Noise(잡음)", "children": ["자연현상(벼락·스파크·열잡음). 통신 주체와 무관"] },
-          { "name": "Interference(간섭)", "children": ["다른 주체의 전송에 의한 장애 (옆자리 손님이 시끄러움)"] },
-          { "name": "Collision(충돌)", "children": ["Interference의 극단형. 둘 이상 동시 전송 → 신호 뒤섞여 아무도 못 알아봄. 이득 보는 자 없음"] }
-        ]},
         { "name": "이상적 MAC 프로토콜의 조건은?", "children": [
           "① 1노드 전송 시 전체율 R 사용",
           "② M노드 시 각 R/M 균등 분배",
@@ -171,8 +165,7 @@
         { "name": "FDMA (Frequency Division)", "children": [
           { "name": "분할 기준은?", "children": ["주파수 대역(band)을 노드별로 쪼개 할당, 시간축은 연속 사용 (4부 합창처럼 골라 들음)"] },
           { "name": "단점은?", "children": ["TDMA와 동일 — 안 쓰는 band는 idle"] }
-        ]},
-        { "name": "(참고) CDMA / OFDMA", "children": ["CDMA: 시간·주파수 아닌 코드(code space)로 분할(3G). OFDMA = 4G/5G(결합, 강의 범위 밖)"] }
+        ]}
       ]
     },
     {
@@ -221,11 +214,6 @@
           { "name": "CD = ?", "children": ["유선 = 고전 이더넷 = 충돌 후 reactive 백오프 = 탐지 가능(에너지 디텍션)"] },
           { "name": "CA = ?", "children": ["무선 = WiFi = 충돌 전 proactive 백오프 = 탐지 불가"] },
           { "name": "★함정", "children": ["\"무선이 충돌을 탐지한다\"는 틀림(탐지 불가가 CA를 쓰는 이유). CD=유선/CA=무선을 뒤집지 말 것"] }
-        ]},
-        { "name": "(★) 이진 지수 백오프 (binary exponential backoff)", "children": [
-          { "name": "K를 어떻게 고르나?", "children": ["m번째 충돌 후 K를 {0,1,…,2^m-1}에서 랜덤 선택"] },
-          { "name": "얼마나 대기?", "children": ["K·512 bit times 대기 후 다시 시도"] },
-          { "name": "충돌이 잦을수록?", "children": ["선택 범위(풀)가 커져 동일 숫자 고를 확률↓ → 언젠가 다른 숫자 → 작은 값 쪽 승리, 큰 값 쪽은 carrier sense로 양보"] }
         ]}
       ]
     },
@@ -263,12 +251,7 @@
           { "name": "이동성은?", "children": ["MAC = portable(flat 주소, LAN 이동 무관) / IP = non-portable(서브넷 종속)"] },
           { "name": "비유는?", "children": ["MAC = 주민등록번호(불변) / IP = 우편 주소(위치 종속)"] }
         ]},
-        { "name": "OUI (할당 구조)", "children": [
-          { "name": "OUI란?", "children": ["48-bit 중 앞 24-bit = OUI(Organizationally Unique Identifier), 제조사별 식별자. IEEE에서 구매"] },
-          { "name": "OUI 하나로 몇 개 확보?", "children": ["MAC 주소 2^24개 (뒤 24-bit는 제조사 자유 배정). 대기업은 여러 OUI 구매"] },
-          { "name": "활용은?", "children": ["DB에 OUI-제조사 기록 → Wireshark로 MAC 보면 어느 회사 장비인지 식별 가능"] }
-        ]},
-        { "name": "NIC란?", "children": ["Network Interface Card. 과거엔 카드(ROM에 MAC 구워짐, 변경 불가). 현대엔 디바이스 드라이버(SW)로 설정·변경 가능"] }
+        { "name": "OUI란? (★보조)", "children": ["48-bit 중 앞 24-bit = OUI(Organizationally Unique Identifier), 제조사별 식별자. IEEE에서 구매"] }
       ]
     },
     {
@@ -319,8 +302,7 @@
         { "name": "이더넷의 성질", "children": [
           { "name": "connectionless란?", "children": ["송수신 NIC 간 핸드셰이킹 없음"] },
           { "name": "unreliable란?", "children": ["수신 NIC가 ACK/NAK를 보내지 않음. drop된 데이터는 상위계층 rdt(TCP)가 있어야 복구"] },
-          { "name": "★교수의 단서는?", "children": ["unreliable·CSMA/CD는 옛 버스형 이더넷 이야기. 현대 스위치트 이더넷은 거의 reliable·충돌 없음 → 너무 무게 두지 말 것"] },
-          { "name": "802.3 명명규칙 예 (100BASE-TX)", "children": ["100 = 100Mbps, BASE = baseband, T = twisted pair 구리, F/X = 광섬유"] }
+          { "name": "★교수의 단서는?", "children": ["unreliable·CSMA/CD는 옛 버스형 이더넷 이야기. 현대 스위치트 이더넷은 거의 reliable·충돌 없음 → 너무 무게 두지 말 것"] }
         ]}
       ]
     },
@@ -377,17 +359,34 @@
           { "name": "TPID (2 byte)란?", "children": ["Tag Protocol Identifier. 값 0x8100 → \"이것은 VLAN 프레임\" 신호"] },
           { "name": "TCI (2 byte)란?", "children": ["Tag Control Information. 12 bit VLAN ID(어느 VLAN인지) + 3 bit priority(IP TOS 유사)"] },
           { "name": "CRC는?", "children": ["재계산(Recomputed)"] }
-        ]},
-        { "name": "(참고) trunk port란?", "children": ["여러 물리 스위치에 걸친 VLAN 간 프레임 운반. VLAN ID 정보를 실어야 함"] }
+        ]}
       ]
     },
     {
-      "name": "12. (참고/시험 비중 낮음) 교수가 제외/스킵 명시",
+      "name": "🔥 가장 중요한 예상 출제 TOP 4",
       "children": [
-        { "name": "MPLS는?", "children": ["굳이 이해 안 해도 괜찮다. 인터넷 중심부 심화. 개념만 알고 넘어가라. (고정 길이 label 20bit로 고속 IP 포워딩)"] },
-        { "name": "데이터센터 네트워크는?", "children": ["\"시험에 안 나올 거예요.\" 구조만(Fat-Tree, TOR 등)"] },
-        { "name": "EVPN / VXLAN은?", "children": ["아주 코너 케이스. \"IP 안에 이더넷\"(역캡슐화·터널링) — 일반적 캡슐화와 반대"] },
-        { "name": "기타 제외 항목은?", "children": ["CDMA/OFDMA 세부, 2차원 패리티, 케이블 HFC 상세, G 선발의 수학 이론 → 강의/시험 범위 밖"] }
+        { "name": "Q1. CSMA/CD와 CSMA/CA의 차이를 설명하라 (★★★ 서술)", "children": [
+          "둘 다 CSMA(Carrier Sense = Listen Before Talk) + 충돌 시 랜덤 백오프라는 랜덤 액세스 DNA 공유. 차이는 '반응 시점'",
+          "CSMA/CD = 유선·고전 이더넷: 전송 중 충돌을 에너지 디텍션으로 탐지 가능 → abort+jam signal 후 충돌 후 reactive 백오프",
+          "CSMA/CA = 무선·WiFi: 자기 송신이 가장 크게 들려 상대 약신호가 묻혀 충돌 탐지 불가 → idle이어도 충돌 전 proactive 백오프 후 전송",
+          { "name": "함정/주의", "children": ["\"무선이 충돌을 탐지한다\"는 틀림(탐지 불가가 CA의 이유). CD=유선/CA=무선을 뒤집지 말 것. 오늘날 진짜 shared medium = WiFi(CSMA/CA)"] }
+        ]},
+        { "name": "Q2. 스위치 self-learning은 무엇을 보고 학습하고 목적지 모르면? 현대 스위치에 충돌이 있나? (★★★)", "children": [
+          "프레임 수신 시 출발지(source) MAC + 들어온 포트를 테이블에 기록 → \"이 MAC은 이 포트 방향\" 학습(초기 테이블 empty)",
+          "목적지 MAC이 테이블에 있으면 해당 포트로 forward(도착 세그먼트가 목적지면 drop), 없으면 flood(도착 포트 제외 전 포트)",
+          "현대 스위치는 호스트마다 전용 full-duplex 직접 연결 → 충돌 없음. CSMA/CD·collision domain은 옛 버스형 이더넷 이야기",
+          { "name": "함정/주의", "children": ["학습 기준은 목적지가 아니라 출발지 MAC. 슬라이드의 collision domain/CSMA-CD 문구는 무시(\"콜리전 얘기 나오면 무시\")"] }
+        ]},
+        { "name": "Q3. Slotted ALOHA 최대 효율은? 왜 그 값이 한계인가? (★★★)", "children": [
+          "Slotted ALOHA 최대 효율 = 1/e ≈ 0.37 (37%). Pure ALOHA ≈ 18%",
+          "랜덤 도착 전제에선 아무리 잘해도 채널의 37%만 유용하게 사용 — 나머지는 충돌·idle 슬롯으로 낭비. 슬롯 동기화로 Pure 대비 효율 약 2배",
+          { "name": "함정/주의", "children": ["Pure(18%)와 Slotted(37%)를 뒤집지 말 것. 수식은 줄 테니(외워 쓰면 됨) 숫자와 '왜 한계인가' 의미를 물음"] }
+        ]},
+        { "name": "Q4. ARP query/response 전송 방식은? A→R→B에서 불변 주소와 매 홉 바뀌는 주소는? (★★)", "children": [
+          "ARP는 같은 LAN에서 IP→MAC을 알아냄. query = 브로드캐스트(이더넷 dst=FF-FF-FF-FF-FF-FF, 내부에 상대 IP) → response = 유니캐스트(상대만 자기 MAC 회신)",
+          "다른 서브넷(A→R→B): 프레임 dst MAC = \"B\"가 아니라 first-hop 라우터 R의 MAC. IP 주소는 종단까지 불변, MAC 주소는 매 홉마다 바뀜",
+          { "name": "함정/주의", "children": ["query/response 방식을 바꿔 쓰지 말 것(브로드캐스트→유니캐스트). 매 홉 바뀌는 건 MAC(IP 아님)"] }
+        ]}
       ]
     },
     {
@@ -401,7 +400,6 @@
         { "name": "CSMA도 충돌난다", "children": ["원인은 전파 지연(propagation delay). 거리↑ → 충돌 확률↑"] },
         { "name": "이더넷 프레임 필드 순서", "children": ["목적지 MAC → 출발지 MAC → type → data → CRC (목적지가 먼저!)"] },
         { "name": "preamble 2역할", "children": ["① 프레임 도착 알림 ② 클럭 동기화 (물리계층 소속)"] },
-        { "name": "type 필드 값", "children": ["0x0800=IPv4, 0x8100=802.1Q VLAN 태그. demultiplexing 용도"] },
         { "name": "링크 계층 배달 범위", "children": ["단 하나의 링크(one hop). \"MAC이 여러 링크 건너간다\"는 틀림. 다중 링크는 3계층(IP) 일"] },
         { "name": "계층별 신뢰성", "children": ["2계층=한 홉 / 3계층(IP)=best-effort(신뢰성 X) / 4계층(TCP)=종단간"] },
         { "name": "체크섬 vs CRC 계층", "children": ["체크섬→3·4계층(IP/UDP/TCP) / CRC→데이터 링크(이더넷·WiFi). 헷갈리지 말 것"] },

@@ -160,18 +160,90 @@
       ]
     },
     {
-      "name": "🎯 핵심 출제 포인트 (중요도순 · 표)",
+      "name": "★ 이 챕터 핵심 출제 포인트 (중요도순)",
       "children": [
-        { "name": "1. K-means 2단계 반복(coordinate descent) ★★★", "children": ["출제각도: '어느 변수를 고정하고 무엇을 갱신하나' 단계 매칭"] },
-        { "name": "2. 하드 할당 vs 소프트 할당 (K-means vs GMM) ★★★", "children": ["출제각도: 단정 배정 vs 확률(책임도) 배정 구분"] },
-        { "name": "3. EM의 E-step / M-step 역할 ★★★", "children": ["출제각도: 책임도 계산=E, 파라미터 갱신=M"] },
-        { "name": "4. K 선택법 (엘보우 / 실루엣) ★★★", "children": ["출제각도: 녹취 강조. K는 하이퍼파라미터·정답 없음"] },
-        { "name": "5. 군집화 = 비지도·결과 비유일성 ★★", "children": ["출제각도: 레이블 없음, 기준 따라 군집 달라짐"] },
-        { "name": "6. K-means 목적함수 J의 의미 ★★", "children": ["출제각도: within-cluster variance(군집 내 분산)"] },
-        { "name": "7. GMM 등장 동기(K-means 한계 2가지) ★★", "children": ["출제각도: 구형 가정 + 하드 할당의 약점"] },
-        { "name": "8. 계층적 군집·덴드로그램 ★★", "children": ["출제각도: K 사후 결정, agglomerative vs divisive"] },
-        { "name": "9. Linkage 종류 차이 ★★", "children": ["출제각도: single(min)/complete(max)/average/Ward"] },
-        { "name": "10. 혼합계수 πk·책임도 γ의 의미 ★", "children": ["출제각도: πk=사전확률, γ=사후확률(소프트값)"] }
+        { "name": "출제 형식은?", "children": ["4지선다·개념 위주 / 수식은 '기호의 의미'만, 계산·유도 없음. K-means(하드)·GMM/EM(소프트)·계층적(linkage) 3대 기법의 차이·역할·할당 방식이 핵심 출제축"] },
+        { "name": "★★★ K-means 2단계 반복(coordinate descent)?", "children": ["두 변수(μ_k, r_nk)를 동시에 못 풀어 하나 고정·하나 갱신을 번갈아. Step1(할당)=μ_k 고정→가장 가까운 중심 배정 / Step2(갱신)=r_nk 고정→중심=할당점 평균. '어느 변수를 고정하고 무엇을 갱신하나' 단계 매칭"] },
+        { "name": "★★★ 하드 할당 vs 소프트 할당 (K-means vs GMM)?", "children": ["K-means=딱 한 클러스터에 단정 배정(hard) / GMM=각 성분에 속할 확률(책임도) 배정(soft). 'K-means가 확률을 출력한다'는 오답"] },
+        { "name": "★★★ EM의 E-step / M-step 역할?", "children": ["E-step=책임도 γ(사후확률) 계산 / M-step=파라미터(μ_k, Σ_k, π_k) 갱신. K-means 할당↔E, 중심갱신↔M (구조적 쌍둥이)"] },
+        { "name": "★★★ K 선택법 (엘보우 / 실루엣)?", "children": ["K는 하이퍼파라미터·정답 없음(녹취 강조). 엘보우=WCSS 감소가 완만해지는 '팔꿈치' / 실루엣=클수록(1에 가까울수록) 좋은 K"] },
+        { "name": "★★ 군집화 = 비지도·결과 비유일성?", "children": ["레이블 없이 유사성만으로 그룹화. 유사성 정의·알고리즘·데이터 가정에 따라 같은 데이터도 다른 군집"] },
+        { "name": "★★ K-means 목적함수 J의 의미?", "children": ["within-cluster variance(군집 내 분산) = 각 점과 자기 중심 간 제곱거리의 합. 군집 간 거리가 아님"] },
+        { "name": "★★ GMM 등장 동기(K-means 한계 2가지)?", "children": ["① 구형·동일 크기·분리 가정 ② 비확률적·하드 할당. GMM은 공분산 Σ_k(타원·방향) + 소프트 할당으로 해결"] },
+        { "name": "★★ 계층적 군집·덴드로그램?", "children": ["클러스터 계층(트리)을 덴드로그램으로 표현, K를 미리 안 정하고 사후 결정. agglomerative(bottom-up, 더 흔함) vs divisive(top-down)"] },
+        { "name": "★★ Linkage 종류 차이?", "children": ["single=최소거리(min) / complete=최대거리(max) / average=평균 / Ward=병합 시 분산 증가 최소화"] },
+        { "name": "★ 혼합계수 π_k·책임도 γ의 의미?", "children": ["π_k=사전확률(합=1, M-step 산물) / γ(z_nk)=사후확률=소프트 할당값(E-step 산물)"] }
+      ]
+    },
+    {
+      "name": "개념별 출제 각도 / 오답 포인트",
+      "children": [
+        { "name": "★★★ 1. K-means 2단계 반복 (coordinate descent)", "children": [
+          { "name": "의미?", "children": ["중심(μ_k)과 할당(r_nk) 두 변수를 동시에 못 풀어서, 하나 고정·하나 갱신을 번갈아 반복. Step1(할당)=μ_k 고정→각 점을 가장 가까운 중심에 배정(r_nk 갱신) / Step2(갱신)=r_nk 고정→중심 μ_k를 할당된 점들의 평균으로 재계산. 반복할수록 J는 단조 감소, 초기 중심은 랜덤"] },
+          { "name": "오답 포인트?", "children": ["어느 step에서 무엇을 고정하는지 뒤바꾼 보기. 'Step1=평균 갱신'은 오답(그건 Step2)"] },
+          { "name": "예상 출제 각도?", "children": ["'K-means에서 클러스터 중심을 갱신하는 단계로 옳은 것은?' → 할당 고정 후 평균"] }
+        ]},
+        { "name": "★★★ 2. 하드 할당 vs 소프트 할당", "children": [
+          { "name": "의미?", "children": ["K-means는 점을 딱 한 클러스터에 단정 배정(hard assignment). GMM은 각 성분에 속할 확률(soft assignment) 부여. 겹치는(overlap) 클러스터는 소프트가 자연스럽게 처리"] },
+          { "name": "오답 포인트?", "children": ["'K-means가 확률을 출력한다' (X). 소프트 할당=GMM/EM의 책임도"] },
+          { "name": "예상 출제 각도?", "children": ["'각 데이터의 클러스터 소속을 확률로 표현하는 기법은?' → GMM"] }
+        ]},
+        { "name": "★★★ 3. EM의 E-step / M-step 역할", "children": [
+          { "name": "의미?", "children": ["GMM은 로그 안에 합(ln∑)이 있어 직접 MLE 불가 → EM으로 우회. E-step=파라미터 고정→책임도 γ(z_nk)=사후확률 계산 / M-step=책임도 고정→파라미터(μ_k, Σ_k, π_k) 갱신"] },
+          { "name": "K-means 대응?", "children": ["할당 단계↔E-step, 중심 갱신↔M-step (구조적 쌍둥이, 단골 비교)"] },
+          { "name": "오답 포인트?", "children": ["E와 M 역할 뒤바꾼 보기. 'M-step에서 책임도 계산' / 'E-step에서 평균 갱신'은 오답"] },
+          { "name": "예상 출제 각도?", "children": ["'EM의 E-step에서 계산하는 것은?' → 책임도(사후확률)"] }
+        ]},
+        { "name": "★★★ 4. K 선택법 — 엘보우 / 실루엣", "children": [
+          { "name": "의미?", "children": ["K(클러스터 수)는 하이퍼파라미터 → 실험자가 결정, 보편적 정답 없음(교수: 단점 아닌 특성). 엘보우=K↑면 WCSS 항상 감소, 감소가 급격히 완만해지는 '팔꿈치' 지점의 K 선택 / 실루엣=응집도(a)·분리도(b) 결합, 값이 클수록(1에 가까울수록) 좋은 K"] },
+          { "name": "오답 포인트?", "children": ["'K가 클수록 WCSS 작으니 큰 K가 좋다' (X). K=N이면 WCSS=0이지만 군집화 의미 소멸"] },
+          { "name": "예상 출제 각도?", "children": ["'WCSS 감소가 꺾이는 지점으로 K를 정하는 방법은?' → 엘보우"] }
+        ]},
+        { "name": "★★ 5. 군집화 = 비지도·결과 비유일성", "children": [
+          { "name": "의미?", "children": ["레이블 없이(unsupervised) 유사성(similarity)만으로 그룹화. 비지도학습의 가장 대표적 task. 결과는 ①유사성 정의 ②알고리즘 ③데이터 가정에 의존 → 같은 데이터도 다른 군집(과일 6개를 색깔 vs 종류로 분류)"] },
+          { "name": "오답 포인트?", "children": ["밀도추정과 혼동. 밀도추정=분포 자체 모델링 / 군집화=그룹 구조 발견"] },
+          { "name": "예상 출제 각도?", "children": ["'군집화 결과가 유일하게 결정되지 않는 이유로 옳은 것은?'"] }
+        ]},
+        { "name": "★★ 6. K-means 목적함수 J", "children": [
+          { "name": "의미?", "children": ["J = within-cluster variance (각 점과 자기 중심 간 제곱거리의 합). 작을수록 군집이 잘 뭉침. r_nk는 지시변수(indicator, 0/1)"] },
+          { "name": "오답 포인트?", "children": ["J를 '클러스터 간 거리'로 착각 (X). J는 군집 내(within) 분산"] },
+          { "name": "예상 출제 각도?", "children": ["'K-means가 최소화하는 양은?' → 군집 내 분산"] }
+        ]},
+        { "name": "★★ 7. GMM 등장 동기 = K-means 한계 2가지", "children": [
+          { "name": "의미?", "children": ["한계① 클러스터를 구형(spherical)·동일 크기·잘 분리됨으로 암묵 가정 / 한계② 비확률적·하드 할당. GMM 개선=각 성분이 자기 공분산(Σ_k) 보유→타원·방향 허용 + 소프트 할당"] },
+          { "name": "오답 포인트?", "children": ["'GMM이 K-means보다 항상 빠르다' (X, 오히려 느림) / GMM 장점이 아닌 것을 고르는 함정"] },
+          { "name": "예상 출제 각도?", "children": ["'K-means 대비 GMM의 장점이 아닌 것은?' 형태"] }
+        ]},
+        { "name": "★★ 8. 계층적 군집·덴드로그램", "children": [
+          { "name": "의미?", "children": ["클러스터 계층(트리) 구축→덴드로그램으로 표현. K를 미리 안 정하고 사후 결정. Agglomerative(응집형, bottom-up, 개별 점에서 병합, 더 흔히 사용) vs Divisive(분할형, top-down, 전체에서 분할)"] },
+          { "name": "오답 포인트?", "children": ["bottom-up↔top-down 방향 뒤바꿈. '계층적은 K를 먼저 지정'은 오답"] },
+          { "name": "예상 출제 각도?", "children": ["'사전에 K를 지정할 필요가 없는 기법은?' → 계층적"] }
+        ]},
+        { "name": "★★ 9. Linkage 종류 차이", "children": [
+          { "name": "의미?", "children": ["두 클러스터 사이 거리를 정의하는 규칙. Single=최소 거리(min) / Complete=최대 거리(max) / Average=평균 / Ward=병합 시 within-cluster variance 증가 최소화. linkage 바꾸면 같은 데이터도 결과 달라짐"] },
+          { "name": "오답 포인트?", "children": ["single↔complete의 min/max 뒤바꿈"] },
+          { "name": "예상 출제 각도?", "children": ["'두 군집 내 가장 가까운 두 점의 거리로 군집 거리를 정의하는 linkage는?' → single"] }
+        ]},
+        { "name": "★ 10. 혼합계수 π_k·책임도 γ", "children": [
+          { "name": "의미?", "children": ["π_k(mixing coefficient)=성분 k의 사전확률, 합=1, M-step에서 π_k=(성분 k의 유효 점 수 N_k)/N / γ(z_nk)(책임도)=점이 성분 k에서 나왔을 사후확률=소프트 할당값, E-step 산물"] },
+          { "name": "오답 포인트?", "children": ["π_k(사전)와 γ(사후) 혼동. γ는 E-step 산물이지 사전확률이 아님"] },
+          { "name": "예상 출제 각도?", "children": ["'EM에서 사후확률(책임도)에 해당하는 것은?' → γ(z_nk)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "⚠️ 객관식 함정 포인트",
+      "children": [
+        { "name": "K-means 2단계 뒤바꿈", "children": ["'할당 단계에서 중심을 평균으로 갱신' → 오답(그건 갱신 단계). Step1=중심 고정→할당, Step2=할당 고정→중심=평균"] },
+        { "name": "E/M 역할 반전 (최빈출 함정)", "children": ["'M-step에서 책임도 계산' → 오답(책임도는 E-step). E=책임도, M=파라미터 갱신"] },
+        { "name": "K-means ↔ EM 대응", "children": ["할당=E, 중심갱신=M. 반대로 매칭한 보기 주의"] },
+        { "name": "엘보우 오해", "children": ["K↑면 WCSS는 무조건 감소 → '큰 K가 항상 좋다'는 오답. K=N이면 군집 무의미(WCSS=0)"] },
+        { "name": "하드/소프트 혼동", "children": ["K-means=하드(확률 출력 X), GMM=소프트(확률 O)"] },
+        { "name": "밀도추정 vs 군집화", "children": ["밀도추정=분포 모델링 / 군집화=그룹 발견"] },
+        { "name": "계층적 K", "children": ["사전 지정 아님(사후 결정). agglomerative=bottom-up이 더 흔함"] },
+        { "name": "linkage min/max", "children": ["single=최소거리, complete=최대거리 (뒤바꿈 주의)"] },
+        { "name": "π_k vs γ", "children": ["π_k=사전확률(M-step) / γ=사후확률·책임도(E-step). 혼동 주의"] },
+        { "name": "J의 정체", "children": ["군집 내(within) 분산이지 군집 간(between) 분산이 아님"] }
       ]
     },
     {
@@ -195,13 +267,13 @@
       ]
     },
     {
-      "name": "✅ 셀프 체크",
+      "name": "✅ 셀프 체크 (반드시 답할 수 있어야 함)",
       "children": [
-        { "name": "Q1", "children": ["K-means에서 Step1(할당)과 Step2(중심 갱신)는 각각 무엇을 고정하고 무엇을 갱신하는가? 이것이 EM의 어느 step에 대응하는가?"] },
-        { "name": "Q2", "children": ["하드 할당과 소프트 할당의 차이는? 소프트 할당을 쓰는 기법과 그 할당값(γ)의 의미는?"] },
-        { "name": "Q3", "children": ["엘보우 방법에서 'K가 클수록 WCSS가 작으니 큰 K가 최선'이 틀린 이유는?"] },
-        { "name": "Q4", "children": ["K-means의 두 가지 한계와, GMM이 이를 어떻게 해결하는지(공분산·확률) 한 문장으로?"] },
-        { "name": "Q5", "children": ["계층적 군집이 K를 미리 정하지 않아도 되는 이유는? single·complete·Ward linkage의 차이는?"] }
+        { "name": "Q1. K-means에서 Step1(할당)과 Step2(중심 갱신)는 각각 무엇을 고정하고 무엇을 갱신하는가? 이것이 EM의 어느 step에 대응하는가?", "children": ["Step1=μ_k 고정→가장 가까운 중심에 할당(r_nk 갱신)=E-step / Step2=r_nk 고정→중심을 할당점 평균으로 갱신=M-step"] },
+        { "name": "Q2. 하드 할당과 소프트 할당의 차이는? 소프트 할당을 쓰는 기법과 그 할당값(γ)의 의미는?", "children": ["하드=한 클러스터에 단정 배정(K-means) / 소프트=각 성분 소속 확률 배정(GMM). γ(z_nk)=점이 성분 k에서 나왔을 사후확률(책임도)"] },
+        { "name": "Q3. 엘보우 방법에서 'K가 클수록 WCSS가 작으니 큰 K가 최선'이 틀린 이유는?", "children": ["K↑면 WCSS는 무조건 감소하고 K=N이면 0이지만 군집화 의미가 사라짐. 감소가 완만해지는 팔꿈치 지점이 적절"] },
+        { "name": "Q4. K-means의 두 가지 한계와, GMM이 이를 어떻게 해결하는지(공분산·확률) 한 문장으로?", "children": ["한계=구형·하드 할당 가정. GMM은 성분별 공분산 Σ_k로 타원·방향 허용하고 소프트 할당(책임도)으로 겹침 처리"] },
+        { "name": "Q5. 계층적 군집이 K를 미리 정하지 않아도 되는 이유는? single·complete·Ward linkage의 차이는?", "children": ["전체 계층(덴드로그램)을 먼저 만들고 잘라서 K를 사후 결정. single=최소거리, complete=최대거리, Ward=병합 시 분산 증가 최소화"] }
       ]
     }
   ]
