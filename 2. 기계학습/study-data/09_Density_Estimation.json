@@ -1,0 +1,327 @@
+{
+  "id": "09_Density_Estimation",
+  "title": "09강 · 밀도 추정 (Density Estimation)",
+  "nodes": [
+    {
+      "name": "한 줄 정의 — 밀도 추정이란?",
+      "children": [
+        "레이블 없는 데이터(비지도 학습)에서 데이터의 확률밀도 p(x)를 추정하는 문제",
+        { "name": "공통 식은?", "children": ["p(x) ≈ K/(NV) — 무엇을 고정하느냐로 갈림"] },
+        { "name": "V 고정하면?", "children": ["KDE (Kernel Density Estimation)"] },
+        { "name": "K 고정하면?", "children": ["KNN (K-Nearest Neighbors)"] },
+        { "name": "모수적 접근으로 등장하는 것은?", "children": ["GMM (Gaussian Mixture Model)"] }
+      ]
+    },
+    {
+      "name": "학습 목표 / 핵심 개념",
+      "children": [
+        { "name": "비지도 학습(Unsupervised Learning)이란?", "children": [
+          "레이블(정답 y)이 없는 데이터에서 내재된 구조(패턴, 규칙성, 숨은 조직)를 찾는 것",
+          { "name": "지도 vs 비지도 차이?", "children": ["지도 학습 = 입력 → 레이블 매핑 학습 / 비지도 학습 = 입력 데이터 자체의 분포·구조 추론"] },
+          { "name": "★ 교수 강조 — 비지도 학습의 가장 큰 목표는?", "children": ["데이터 분포(distribution)를 추정하는 것"] }
+        ]},
+        { "name": "밀도 추정(Density Estimation)이란?", "children": [
+          "비지도 학습의 가장 기본 과제. 유한한 샘플로부터 진짜 데이터 분포 p(x)를 근사",
+          { "name": "확률 모델이 부여하는 것?", "children": ["데이터가 밀집된 영역 → 높은 확률, 희소한 영역 → 낮은 확률"] },
+          { "name": "핵심 구도?", "children": ["진짜 p(x)는 직접 알 수 없고, p(x)에서 나온 샘플(데이터)만 관측 가능 → 그 데이터로 p(x)를 역으로 추정"] }
+        ]},
+        { "name": "본 강의 흐름은?", "children": ["기본 원리(이항분포 유도) → Histogram → KDE → KNN → (모수적) GMM → MLE 한계 → (다음 시간) EM"] }
+      ]
+    },
+    {
+      "name": "1. 밀도 추정의 기본 원리 (공통 추정식 유도)",
+      "children": [
+        { "name": "목표는?", "children": ["D-차원 공간의 점 x에서 미지의 밀도 p(x)를 추정"] },
+        { "name": "영역 R 안에 들어갈 확률(확률질량) P는?", "children": ["P = ∫_R p(x) dx"] },
+        { "name": "N개 독립 관측 중 R 안 개수 K는 무슨 분포?", "children": [
+          "이항분포(Binomial distribution)를 따름",
+          { "name": "왜 이항분포인가?", "children": ["각 점의 결과는 두 가지: R 안(확률 P) 또는 밖(확률 1−P)"] },
+          { "name": "이항분포 식?", "children": ["Bin(K | N, P) = C(N,K) P^K (1−P)^(N−K) = N!/(K!(N−K)!) · P^K (1−P)^(N−K)"] }
+        ]},
+        { "name": "비율 K/N의 기댓값과 분산?", "children": ["E[K/N] = P, var[K/N] = P(1−P)/N"] },
+        { "name": "N이 커지면? → 경험적 추정", "children": [
+          "비율이 P에 수렴 → P ≈ K/N",
+          { "name": "교수 직관?", "children": ["공을 수많이(ntry) 뽑아 R 안에 몇 번 들어가는지(K) 세면 P를 추정 가능, N이 클수록 진짜 P에 가까워진다"] }
+        ]},
+        { "name": "영역 R이 매우 작으면?", "children": [
+          "p(x)가 그 안에서 거의 상수 → 적분 ≈ 밀도 × 영역 크기 → P ≈ p(x) V",
+          { "name": "영역의 '크기'란?", "children": ["D-차원에서 부피(Volume) V"] }
+        ]},
+        { "name": "★ 밀도 추정 공통식은?", "children": [
+          "p(x) ≈ P/V = K/(NV)",
+          { "name": "의미?", "children": ["한 점 주변 작은 이웃에 들어간 데이터 비율을 그 이웃의 부피로 나눈 값"] }
+        ]},
+        { "name": "★ 교수 강조 — 이 식이 매우 중요. 두 갈래 분기는?", "children": [
+          "N은 우리가 정함. K와 V 중 하나를 고정하는 방식으로 두 갈래로 나뉨",
+          { "name": "갈래 1 — V 고정, K를 셈", "children": ["커널 밀도 추정(Kernel Density Estimation, KDE)"] },
+          { "name": "갈래 2 — K 고정, V를 조절", "children": ["K-최근접 이웃(K-Nearest Neighbors, KNN)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "2. 히스토그램 (Histogram) — KDE의 특수 경우",
+      "children": [
+        { "name": "어떤 접근의 예시?", "children": ["첫 번째 접근(V 고정)의 가장 단순한 예시"] },
+        { "name": "절차는?", "children": ["x축을 고정 폭의 bin(예: 폭 0.1)으로 분할 → 각 bin 안 데이터 개수를 카운트 → bin 부피로 정규화"] },
+        { "name": "여기서 V는?", "children": ["고정된 bin의 폭(부피)"] },
+        { "name": "교수 설명?", "children": ["온도/몸무게 등 변수의 빈도(frequency)를 막대로 표현 → 단순한 밀도 추정의 일종"] },
+        { "name": "한계(다음 KDE 동기)는?", "children": ["bin이 고정된 박스라 위치를 옮겨 가며 부드럽게 추정 불가"] }
+      ]
+    },
+    {
+      "name": "3. 커널 밀도 추정 (Kernel Density Estimation, KDE)",
+      "children": [
+        { "name": "핵심은?", "children": ["영역 크기(V)는 고정하되, 히스토그램처럼 고정된 박스에 갇히지 않고 모든 점 x 위로 윈도우를 부드럽게 슬라이딩(slide)하며 그 지점의 밀도를 계산"] },
+        { "name": "커널 함수(kernel function)란?", "children": ["각 데이터 점이 x에서의 추정값에 얼마나 기여하는지를 결정하는 함수"] },
+        { "name": "3-1. 균등(박스) 커널 — Uniform / Box Kernel", "children": [
+          { "name": "영역의 형태는?", "children": ["한 변 길이 h(bandwidth, 대역폭)인 D-차원 하이퍼큐브(hypercube)"] },
+          { "name": "큐브 안에 있을 조건?", "children": ["모든 차원에서 중심 x와의 차가 h/2 이하"] },
+          { "name": "박스 커널 함수 k는?", "children": ["k((x−x⁽ⁿ⁾)/h) = 1 if |xᵢ − xᵢ⁽ⁿ⁾| ≤ h/2 (i=1,…,D), 0 otherwise"] },
+          { "name": "큐브 안 데이터 수 K는?", "children": ["K = Σ_{n=1}^{N} k((x−x⁽ⁿ⁾)/h)"] },
+          { "name": "추정 밀도 (부피 V = h^D)는?", "children": ["p(x) = K/(NV) = (1/N) Σ_{n=1}^{N} (1/h^D) k((x−x⁽ⁿ⁾)/h)"] },
+          { "name": "교수 직관?", "children": ["큐브를 데이터 공간 위에서 X·Y·Z축 방향으로 순회하며, 각 위치에서 안에 든 점 개수(K)를 세어 밀도를 추정. 점이 많은 곳=dense, 적은 곳=sparse"] }
+        ]},
+        { "name": "3-2. 가우시안 커널 — Gaussian Kernel", "children": [
+          { "name": "박스 커널 대신 무엇을 사용?", "children": ["박스 커널의 날카로운 경계 대신 부드러운(smooth) 종 모양 함수 사용 → 더 점진적인 추정"] },
+          { "name": "가우시안 커널 밀도식은?", "children": ["p(x) = (1/N) Σ_{n=1}^{N} (1/(2πh²)^(1/2)) exp(−‖x−x⁽ⁿ⁾‖² / (2h²))"] },
+          { "name": "★ 여기서 h(bandwidth)는 무엇 역할?", "children": ["가우시안 성분의 표준편차 → 추정의 매끄러움(smoothness)을 제어"] },
+          { "name": "★ 박스 vs 가우시안 차이?", "children": ["박스 커널: 안에 있으면 1, 밖이면 0 (이산) vs 가우시안 커널: 가까우면 큰 값, 멀면 작은 값 (연속·부드러움)"] },
+          { "name": "다양한 커널 종류?", "children": ["top-hat(=box), exponential, linear, cosine 등 → 커널 모양에 따라 추정 매끄러움이 달라짐"] }
+        ]},
+        { "name": "3-3. ★ Bandwidth h 선택 (KDE의 핵심 난제)", "children": [
+          { "name": "h 작게 하면?", "children": ["디테일 잘 잡지만 노이즈 많음 (특히 데이터 희소 지역)"] },
+          { "name": "h 크게 하면?", "children": ["매끄럽지만 과평활화(over-smoothing), 중요한 디테일(예: 봉우리)을 놓침"] },
+          { "name": "교수 예시(봉우리 2개 분포)?", "children": [
+            "h 너무 작음(예: 0.005) → 너무 noisy",
+            "h 적당(예: 0.07) → 두 봉우리를 잘 추정",
+            "h 너무 큼 → 봉우리 1개로 뭉개짐 (캐치 실패)"
+          ]},
+          { "name": "★ KDE의 challenge는?", "children": ["적절한 h를 찾는 것"] }
+        ]}
+      ]
+    },
+    {
+      "name": "4. K-최근접 이웃 밀도 추정 (KNN Density Estimation)",
+      "children": [
+        { "name": "KDE의 근본 문제는?", "children": [
+          "h가 모든 영역에서 동일 → 데이터 분포가 지역마다 다른데도 같은 크기 윈도우 사용",
+          { "name": "구체적 문제?", "children": ["밀집 지역에선 h가 크면 디테일 뭉개짐 / 희소 지역에선 h가 작으면 noisy"] },
+          { "name": "결론?", "children": ["최적 h는 지역마다 달라야 함"] }
+        ]},
+        { "name": "해결책은?", "children": [
+          "커널 크기를 국소 밀도(local density)에 따라 적응적으로 조정",
+          { "name": "★ KDE와 반대인 점?", "children": ["KDE = V 고정·K 셈 ↔ KNN은 K 고정·V 조절"] }
+        ]},
+        { "name": "절차는?", "children": ["점 x 주변 영역(예: 구/sphere)을 정확히 K개의 데이터를 포함할 때까지 확장 → 그때의 부피 V 사용"] },
+        { "name": "추정식?", "children": ["p(x) ≈ K/(NV)"] },
+        { "name": "교수 직관?", "children": ["데이터 밀집 지역 → 작은 V로도 K개 채워짐 → p(x) 큼 / 희소 지역 → V 커야 함 → p(x) 작음"] },
+        { "name": "★ K 선택 문제 (KDE의 h 문제와 대응)?", "children": ["K=1 → 매우 noisy(들쭉날쭉) / K 적당(예: 5) → 잘 추정 / K 큼(예: 30) → 과평활화"] },
+        { "name": "4-1. KNN을 분류(Classification)에 활용", "children": [
+          { "name": "어떻게 사용?", "children": ["같은 아이디어를 지도 학습 분류기로도 사용 가능 (KNN classifier, 앞서 배운 기법)"] },
+          { "name": "설정은?", "children": ["클래스 C_c에 N_c개 점, 전체 N = Σ_c N_c. 새 점 x 주변을 K개 이웃 포함까지 확장(부피 V), 그중 K_c개가 클래스 C_c"] },
+          { "name": "클래스 조건부 밀도(class-conditional density)?", "children": ["p(x | C_c) ≈ K_c/(N_c V)"] },
+          { "name": "전체(무조건) 밀도와 사전확률(prior)?", "children": ["p(x) = K/(NV), p(C_c) = N_c/N"] },
+          { "name": "★ 베이즈 정리로 구한 사후확률(posterior)?", "children": ["p(C_c | x) = p(x|C_c) p(C_c) / p(x) = K_c/K"] },
+          { "name": "★ 결론?", "children": ["사후확률 = K개 최근접 이웃 중 클래스 C_c에 속한 비율 → 단순한 분류 규칙이지만 바탕 원리는 여전히 밀도 추정"] },
+          { "name": "교수 강조?", "children": ["KNN은 비지도(density estimation)·지도(classification) 두 버전이 따로 존재, 핵심 아이디어는 동일"] }
+        ]}
+      ]
+    },
+    {
+      "name": "5. 모수 vs 비모수 (Parametric vs Non-parametric)",
+      "children": [
+        { "name": "KDE, KNN은?", "children": [
+          "비모수적(non-parametric)",
+          { "name": "왜 non-parametric인가?", "children": ["데이터가 특정 분포를 따른다고 가정하지 않음 → 그래서 non-parametric"] },
+          { "name": "단점?", "children": ["모델 복잡도가 데이터셋 크기에 따라 증가, 밀도 추정을 데이터 점 자체로부터 직접 구성, 국소 평활화 선택(bandwidth 등)에 크게 의존"] }
+        ]},
+        { "name": "GMM은?", "children": [
+          "모수적(parametric)",
+          { "name": "왜 parametric인가?", "children": ["데이터가 특정 분포(가우시안들의 가중합)를 따른다고 가정하고 시작"] },
+          { "name": "무엇을 학습?", "children": ["데이터마다 커널을 놓는 대신, 유한한 개수의 성분(component)의 파라미터를 학습"] }
+        ]},
+        { "name": "★ 교수 팁 — 구분 기준은?", "children": ["parametric/non-parametric 구분은 가끔 헷갈리고 경계가 애매. 기준은 '특정 분포를 가정하느냐'"] }
+      ]
+    },
+    {
+      "name": "6. 가우시안 혼합 모델 (Gaussian Mixture Model, GMM)",
+      "children": [
+        { "name": "아이디어는?", "children": ["미지의 밀도를 여러 단순 모수 분포의 가중 결합(weighted combination)으로 근사"] },
+        { "name": "GMM의 가정은?", "children": ["모든 데이터가 유한 개의 가우시안 분포 혼합으로 생성된다고 가정 (파라미터는 미지)"] },
+        { "name": "GMM 혼합식은?", "children": ["p(x) = Σ_{k=1}^{K} π_k N(x | μ_k, Σ_k)"] },
+        { "name": "구성 요소 — K는?", "children": ["가우시안 성분 개수"] },
+        { "name": "★ 구성 요소 — π_k는?", "children": ["가중치(weight) = 사전확률, 0 ≤ π_k ≤ 1, Σ_k π_k = 1 → 각 성분이 얼마나 기여하는지"] },
+        { "name": "★ 구성 요소 — N(x | μ_k, Σ_k)는?", "children": ["평균 μ_k, 공분산 Σ_k인 가우시안 → 기저함수(basis function) 역할"] },
+        { "name": "교수 그림 예시?", "children": ["실제 분포가 5개 가우시안의 합으로 이루어졌다고 가정 → 각 가우시안의 평균·분산·가중치를 추정"] },
+        { "name": "★ 추정해야 할 파라미터 3종 세트는?", "children": ["{π_k, μ_k, Σ_k}_{k=1}^{K} → 이 셋을 찾는 것이 GMM의 핵심"] },
+        { "name": "6-1. 잠재변수 (Latent Variable) z", "children": [
+          { "name": "★ 잠재변수란?", "children": ["직접 관측되지 않지만 각 데이터 x의 생성에 영향을 준다고 가정하는 변수 (보통 z로 표기)"] },
+          { "name": "관계는?", "children": ["생성(Generation) p(x|z) ↔ 추론(Inference) p(z|x)"] },
+          { "name": "교수 예시?", "children": ["지능(intelligence) = 잠재변수 z (직접 정량화 어려움) → 관측 가능한 GPA·SAT(수능)·내신 점수 = x"] },
+          { "name": "★ 도입 이유(교수 강조)?", "children": ["실제 x는 고차원(high-dimensional, 예: 이미지 수천×수천 픽셀)이라 p(x)를 단번에 추정하기 매우 어려움 → 잠재변수로 더 쉽게 접근"] },
+          { "name": "★ GMM 맥락에서 잠재변수는?", "children": ["어느 가우시안 성분에서 생성됐는가"] }
+        ]},
+        { "name": "6-2. 결합분포·주변화로 혼합식 유도", "children": [
+          { "name": "주변화(marginalization) 식은?", "children": ["p(x) = Σ_z p(x, z)"] },
+          { "name": "잠재변수 z의 형태는?", "children": ["길이 K의 원-핫(one-hot) 벡터 (z_k=1이면 k번째 성분 선택, 나머지 z_j=0)"] },
+          { "name": "사전분포(prior)는?", "children": ["p(z_k = 1) = π_k, 0 ≤ π_k ≤ 1, Σ_{k=1}^{K} π_k = 1"] },
+          { "name": "조건부(어느 성분이 골라졌을 때 x)는?", "children": ["p(x | z_k = 1) = N(x | μ_k, Σ_k)"] },
+          { "name": "★ 주변화로 혼합식 복원?", "children": ["p(x) = Σ_z p(z) p(x|z) = Σ_{k=1}^{K} p(z_k=1) p(x|z_k=1) = Σ_{k=1}^{K} π_k N(x | μ_k, Σ_k)"] },
+          { "name": "교수 직관?", "children": ["한 데이터 점이 '어느 가우시안에서 샘플링됐을까?' → 가까운 가우시안에서 나왔을 기여도(확률)는 크고 먼 가우시안은 거의 0 → 모든 성분의 기여도를 합한 것이 p(x)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "7. GMM의 MLE와 그 한계",
+      "children": [
+        { "name": "목표는?", "children": ["관측 데이터를 가장 잘 설명하는 파라미터 → 최대우도추정(Maximum Likelihood Estimation, MLE)"] },
+        { "name": "로그우도(log-likelihood) 식은?", "children": [
+          "데이터 i.i.d. 가정 → 우도는 곱 → 로그우도:",
+          "ln p(X | π, μ, Σ) = Σ_{n=1}^{N} ln( Σ_{k=1}^{K} π_k N(x⁽ⁿ⁾ | μ_k, Σ_k) )"
+        ]},
+        { "name": "행렬 표기는?", "children": ["데이터 행렬 X ∈ ℝ^(N×D), 잠재변수 행렬 Z ∈ ℝ^(N×K) (각 행이 원-핫)"] },
+        { "name": "★ 7-1. 문제 ①: 로그 안의 합 (해석적 해 불가)", "children": [
+          { "name": "단일 가우시안은?", "children": ["로그가 가우시안 하나에 직접 적용 → 간단한 형태"] },
+          { "name": "GMM은?", "children": ["로그가 가우시안들의 '합'에 적용 → 미분 시 비선형 방정식 → 해석적으로 풀 수 없음"] },
+          { "name": "교수 강조?", "children": ["ln 안에 Σ(시그마)가 들어 있으면 곱이 안 쪼개져 유도가 매우 어려움"] }
+        ]},
+        { "name": "★ 7-2. 문제 ②: 특이점 / 우도 발산 (Singularity)", "children": [
+          { "name": "무슨 일이 생기나?", "children": ["로그우도가 무한대로 발산(unbounded) 가능 → 잘못된 해(singularity)"] },
+          { "name": "등방성 공분산 Σ_k = σ_k² I로 단순화한 성분 밀도?", "children": ["N(x⁽ⁿ⁾ | μ_k, σ_k² I) = 1/((2π)^(D/2) σ_k^D) · exp(−(1/2)(x⁽ⁿ⁾−μ_k)ᵀ(x⁽ⁿ⁾−μ_k)/σ_k²)"] },
+          { "name": "한 성분 평균이 한 데이터 점과 일치(μ_k = x⁽ⁿ⁾)하면?", "children": [
+            "지수부 = 0 → exp(0)=1, 남는 항: N(x⁽ⁿ⁾ | μ_k, σ_k² I) = 1/((2π)^(D/2) σ_k^D)",
+            { "name": "σ_k → 0이면?", "children": ["이 값이 무한대로 발산 → 로그우도 → ∞"] }
+          ]},
+          { "name": "의미는?", "children": ["MLE를 직접 풀면 한 가우시안이 단일 데이터 점 위로 붕괴(collapse)하며 분산이 0 → 과적합(overfitting), 우리가 원하는 전체 분포 추정이 아님"] },
+          { "name": "결론?", "children": ["GMM의 MLE는 well-posed 하지 않다 (이런 특이해가 항상 가능)"] }
+        ]},
+        { "name": "7-3. 해결책 → EM 알고리즘 (다음 시간)", "children": [
+          { "name": "왜 MLE를 직접 안 푸나?", "children": ["위 두 문제 때문에 MLE를 직접 풀지 않고 기댓값-최대화(Expectation-Maximization, EM) 알고리즘 사용"] },
+          { "name": "EM이란?", "children": ["잠재변수를 가진 모델을 위한 일반적 최적화 프레임워크"] },
+          { "name": "다음 시간 주제?", "children": ["클러스터링(Clustering) — GMM은 밀도 추정뿐 아니라 클러스터링 모델로도 널리 활용됨"] }
+        ]}
+      ]
+    },
+    {
+      "name": "★ 이 챕터 핵심 출제 포인트 (중요도순)",
+      "children": [
+        { "name": "출제 형식은?", "children": ["4지선다 개념 위주 / 수식 계산·유도 없음 / 이 챕터에서 4~5문제 예상. 수식이 보여도 '그 기호가 무슨 의미인지'만 묻는다"] },
+        { "name": "★★★ 공통식 p(x)≈K/NV에서 무엇을 고정?", "children": ["고정 대상 → KDE vs KNN 구분 (교수 '이 식이 굉장히 중요' 반복 강조)"] },
+        { "name": "★★★ KDE vs KNN 방향?", "children": ["KDE = V(부피) 고정·K를 센다 / KNN = K 고정·V를 조절한다 (방향 반대, 가장 헷갈리는 함정)"] },
+        { "name": "★★★ Bandwidth h(또는 K) 선택 trade-off?", "children": ["작으면 noisy(과적합), 크면 over-smoothing(디테일 손실)"] },
+        { "name": "★★★ Non-parametric vs Parametric 기준?", "children": ["'특정 분포를 가정하느냐' (KDE·KNN=비모수 / GMM=모수)"] },
+        { "name": "★★ GMM이란?", "children": ["유한 개 가우시안의 가중합으로 데이터 분포를 가정. π_k=가중치=사전확률, μ_k=평균, Σ_k=공분산(퍼짐)"] },
+        { "name": "★★ 추정할 파라미터 3종 세트?", "children": ["π_k, μ_k, Σ_k"] },
+        { "name": "★★ 잠재변수(latent variable) z의 의미?", "children": ["직접 관측 안 되지만 데이터 생성에 영향. GMM에선 '어느 가우시안에서 나왔나'"] },
+        { "name": "★★ GMM의 MLE가 직접 안 되는 두 이유?", "children": ["로그 안의 합 / 특이점 발산 → 그래서 EM"] },
+        { "name": "★ Histogram이란?", "children": ["KDE(V 고정)의 가장 단순한 특수 경우"] },
+        { "name": "★ KNN 분류 결과?", "children": ["p(C_c|x)=K_c/K (최근접 K개 중 해당 클래스 비율)"] },
+        { "name": "★ 비지도학습의 목표?", "children": ["레이블 없이 데이터 분포 추정"] }
+      ]
+    },
+    {
+      "name": "개념별 출제 각도 / 오답 포인트",
+      "children": [
+        { "name": "★★★ 1. 공통식 p(x)≈K/NV와 두 갈래 분기", "children": [
+          { "name": "의미?", "children": ["한 점 주변 작은 이웃에 들어온 데이터 비율(K/N)을 그 이웃의 부피(V)로 나눈 것이 밀도 추정값. N은 우리가 정하므로 K와 V 중 하나를 고정해야 나머지가 정해진다"] },
+          { "name": "분기?", "children": ["V 고정→K를 센다 = KDE / K 고정→V를 조절 = KNN"] },
+          { "name": "오답 포인트?", "children": ["KDE를 'K 고정'으로, KNN을 'V 고정'으로 뒤바꾼 선지. 방향이 반대다"] },
+          { "name": "예상 출제 각도?", "children": ["'다음 중 KDE에 해당하는 설명은?' → V를 고정하고 윈도우 안 데이터 개수를 센다"] }
+        ]},
+        { "name": "★★★ 2. KDE", "children": [
+          { "name": "의미?", "children": ["영역 크기(V) 고정. 단, 히스토그램처럼 고정 칸에 갇히지 않고 윈도우를 모든 점 위로 부드럽게 슬라이딩하며 그 지점 밀도를 계산. 커널 함수 = 각 데이터 점이 추정값에 얼마나 기여하는지 결정"] },
+          { "name": "박스(균등)커널 vs 가우시안 커널?", "children": ["박스 = 안에 있으면 1, 밖이면 0 (이산·날카로움) / 가우시안 = 가까우면 큰 값, 멀면 작은 값 (연속·부드러움)"] },
+          { "name": "h(bandwidth)의 의미?", "children": ["윈도우/큐브의 한 변 크기. 가우시안 커널에서는 표준편차 역할"] },
+          { "name": "오답 포인트?", "children": ["'박스 커널이 가까운 점에 더 큰 가중치를 준다' (X, 그건 가우시안) / '가우시안 커널은 경계 밖이면 0을 반환' (X, 작지만 0은 아님)"] },
+          { "name": "예상 출제 각도?", "children": ["'가우시안 커널과 박스 커널의 차이로 옳은 것은?' → 가우시안은 거리에 따라 연속적으로 감소"] }
+        ]},
+        { "name": "★★★ 3. Bandwidth h / K 선택 trade-off", "children": [
+          { "name": "의미?", "children": ["h(또는 K)가 너무 작으면 노이즈까지 잡아 들쭉날쭉(과적합), 너무 크면 과평활화로 봉우리 같은 디테일을 놓침. 교수 그림: 봉우리 2개를 h 적당(0.07)일 때만 잘 잡고, 너무 크면 1개로 뭉개짐"] },
+          { "name": "오답 포인트?", "children": ["'h를 크게 할수록 추정이 정확해진다' (X, over-smoothing) / 'h가 작을수록 항상 좋다' (X, noisy)"] },
+          { "name": "대응 관계?", "children": ["KDE의 challenge = 적절한 h 찾기 / KNN의 challenge = 적절한 K 찾기"] },
+          { "name": "예상 출제 각도?", "children": ["'bandwidth를 너무 크게 잡았을 때 생기는 현상은?' → over-smoothing, 디테일 손실"] }
+        ]},
+        { "name": "★★★ 4. KNN Density Estimation", "children": [
+          { "name": "의미?", "children": ["K 고정. 점 x 주변 영역을 정확히 K개 데이터를 포함할 때까지 확장 → 그때의 부피 V 사용. 밀집 지역은 작은 V로도 K개 채워져 p(x) 큼 / 희소 지역은 V가 커야 해서 p(x) 작음"] },
+          { "name": "KDE 대비 장점?", "children": ["h가 전 영역에서 동일한 KDE의 문제를 해결 → 국소 밀도에 적응적"] },
+          { "name": "오답 포인트?", "children": ["'KNN은 영역 크기를 고정한다' (X, K를 고정) / 'KNN은 항상 같은 부피를 쓴다' (X, 적응적으로 변함)"] },
+          { "name": "예상 출제 각도?", "children": ["'지역마다 윈도우 크기를 다르게 적응시키는 방법은?' → KNN"] }
+        ]},
+        { "name": "★★★ 5. Parametric vs Non-parametric", "children": [
+          { "name": "의미?", "children": ["구분 기준은 단 하나, '데이터가 특정 분포를 따른다고 가정하느냐'. KDE·KNN은 가정 안 함 → non-parametric. GMM은 가우시안 가정 → parametric"] },
+          { "name": "교수 강조?", "children": ["경계가 헷갈리니 '분포 가정 여부'로 판단하라"] },
+          { "name": "오답 포인트?", "children": ["'파라미터가 있으면 parametric' 같은 단순 추론 (X) / 'KDE는 커널 파라미터가 있으니 parametric' (X, 분포 가정이 없어 non-parametric)"] },
+          { "name": "예상 출제 각도?", "children": ["'다음 중 non-parametric 방법은?' → KDE, KNN"] }
+        ]},
+        { "name": "★★ 6. GMM", "children": [
+          { "name": "의미?", "children": ["미지의 분포를 유한 개 가우시안의 가중합으로 가정. π_k=가중치이자 사전확률(Σ_k π_k=1, 각 성분 기여도), μ_k=평균(위치), Σ_k=공분산(뾰족함/퍼짐)"] },
+          { "name": "추정 파라미터 3종?", "children": ["π_k, μ_k, Σ_k. 이 셋을 찾는 것이 GMM의 핵심"] },
+          { "name": "오답 포인트?", "children": ["Σ_k를 평균으로, μ_k를 가중치로 헷갈리는 선지 / 'π_k의 합은 1이 아니어도 된다' (X)"] },
+          { "name": "예상 출제 각도?", "children": ["'GMM에서 π_k가 의미하는 것은?' → 각 가우시안 성분의 가중치(=사전확률)"] }
+        ]},
+        { "name": "★★ 7. 잠재변수 z", "children": [
+          { "name": "의미?", "children": ["직접 관측되지 않지만 데이터 x 생성에 영향을 주는 숨은 변수. 도입 이유 = 실제 x가 고차원(예: 이미지)이라 p(x)를 단번에 추정하기 어려워서. GMM 맥락에서 z = '어느 가우시안 성분에서 생성됐는가' (원-핫 벡터)"] },
+          { "name": "교수 예시?", "children": ["지능(intelligence)=z(정량화 어려움), 관측 가능한 SAT·내신 점수=x"] },
+          { "name": "오답 포인트?", "children": ["'잠재변수는 관측 가능한 입력 데이터다' (X) / 'z는 출력 레이블 y와 같다' (X)"] },
+          { "name": "예상 출제 각도?", "children": ["'GMM에서 잠재변수 z가 나타내는 것은?' → 데이터가 어느 가우시안 성분에서 나왔는지"] }
+        ]},
+        { "name": "★★ 8. GMM MLE의 한계 → EM", "children": [
+          { "name": "의미?", "children": ["로그우도를 직접 최대화하기 어려운 두 이유. ① 로그 안에 합(∑)이 들어 곱으로 안 쪼개져 미분 시 비선형 → 해석적 해 없음. ② 특이점(singularity): 한 가우시안 평균이 한 데이터 점과 일치하고 분산 σ→0이면 우도가 무한대로 발산 → 단일 점 위로 붕괴(과적합). 그래서 EM 알고리즘으로 우회(다음 강의 클러스터링과 연결)"] },
+          { "name": "오답 포인트?", "children": ["특이점 원인을 '데이터가 너무 많아서'로 (X, 분산이 0으로 붕괴해서) / 'GMM은 MLE로 깔끔히 풀린다' (X)"] },
+          { "name": "예상 출제 각도?", "children": ["'GMM에 MLE를 직접 적용할 수 없는 이유는?' → 로그 안의 합 / 특이점 발산"] }
+        ]},
+        { "name": "★ 9. Histogram, KNN 분류, 밀도값", "children": [
+          { "name": "Histogram?", "children": ["V 고정 방식(KDE)의 가장 단순한 특수 경우. bin 폭 = 고정 부피"] },
+          { "name": "KNN 분류?", "children": ["p(C_c|x)=K_c/K = 최근접 K개 이웃 중 해당 클래스 비율. KNN은 비지도(밀도추정)·지도(분류) 두 버전이 따로 있고 아이디어는 동일"] },
+          { "name": "밀도값?", "children": ["p(x) 자체는 1을 넘을 수 있음(V가 작을 때). 단 전체를 적분하면 1. (확률값과 밀도값 혼동 주의)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "⚠️ 객관식 함정 포인트",
+      "children": [
+        { "name": "KDE ↔ KNN 방향 뒤집기 (최빈출 함정)", "children": ["KDE=V 고정·K 셈 / KNN=K 고정·V 조절. 선지에서 서로 바꿔 놓는다"] },
+        { "name": "h(또는 K) trade-off 방향", "children": ["작음=noisy/과적합, 큼=over-smoothing/디테일 손실. '크게 할수록 정확'은 오답"] },
+        { "name": "Parametric/Non-parametric", "children": ["기준은 '분포 가정 여부'뿐. KDE에 커널 파라미터가 있어도 non-parametric"] },
+        { "name": "박스 커널 vs 가우시안 커널", "children": ["박스=1/0 이산, 가우시안=거리 따라 연속 감소. 둘의 성질 교차 선지 주의"] },
+        { "name": "GMM 파라미터 역할 바꾸기", "children": ["π=가중치/사전확률, μ=평균, Σ=공분산(퍼짐). 셋을 섞은 선지"] },
+        { "name": "잠재변수 z 오해", "children": ["z는 관측 불가능한 숨은 변수이지 입력 x나 레이블 y가 아니다. GMM에선 '성분 선택'"] },
+        { "name": "GMM MLE 실패 이유", "children": ["①로그 안 합 ②특이점 발산. '데이터 부족' '차원 저주' 등은 오답"] },
+        { "name": "밀도값 vs 확률값", "children": ["p(x)는 1을 초과할 수 있다(적분이 1이면 됨). '밀도는 항상 1 이하'는 오답"] },
+        { "name": "KNN 분류 사후확률", "children": ["K_c/K. V가 약분돼 사라진다 — 'V에 의존한다'는 오답"] }
+      ]
+    },
+    {
+      "name": "★ 시험 포인트 / 자주 헷갈리는 점",
+      "children": [
+        { "name": "공통 출발식 암기", "children": ["p(x) ≈ K/(NV). 무엇을 고정하느냐가 KDE/KNN을 가른다"] },
+        { "name": "KDE vs KNN (방향 헷갈리지 말 것)", "children": ["KDE = V 고정, K를 센다 / KNN = K 고정, V를 조절한다"] },
+        { "name": "Histogram의 위치", "children": ["KDE(V 고정 방식)의 특수 경우. bin 폭 = 고정 부피"] },
+        { "name": "KDE 약점 / KNN 약점", "children": ["KDE 약점 = bandwidth h 선택, KNN 약점 = K 선택. 둘 다 작으면 noisy(과적합), 크면 over-smoothing(디테일 손실) — 동일한 trade-off"] },
+        { "name": "KDE에서 h의 의미", "children": ["가우시안 커널의 표준편차"] },
+        { "name": "KNN이 KDE보다 나은 점", "children": ["h가 전 영역에서 동일한 문제를 해결 → 국소 밀도에 적응적(밀집=작은 V, 희소=큰 V)"] },
+        { "name": "KNN 분류의 핵심 결과", "children": ["p(C_c|x) = K_c/K (최근접 K개 중 해당 클래스 비율). 베이즈 정리로 유도되며 V가 약분되어 사라진다"] },
+        { "name": "Non-parametric vs Parametric 기준", "children": ["'특정 분포를 가정하는가'. KDE·KNN은 가정 안 함(non-parametric), GMM은 가우시안 가정(parametric)"] },
+        { "name": "GMM의 π_k", "children": ["가중치이자 사전확률, Σ_k π_k = 1. N 안의 μ_k=평균, Σ_k=공분산(뾰족함/퍼짐 결정)"] },
+        { "name": "추정 파라미터 3종", "children": ["π_k, μ_k, Σ_k"] },
+        { "name": "GMM 혼합식 유도", "children": ["원-핫 잠재변수 z + 결합분포 주변화(p(x)=Σ_z p(z)p(x|z)) → Σ_k π_k N"] },
+        { "name": "GMM의 MLE가 안 되는 두 이유 (자주 출제)", "children": [
+          "① 로그 안에 합(sum) → 미분 시 비선형 → 해석적 해 없음",
+          "② 특이점(singularity): μ_k가 한 데이터 점과 일치하고 σ_k→0이면 우도 →∞ (unbounded) → 단일 점 붕괴·과적합"
+        ]},
+        { "name": "그래서 무엇으로 우회?", "children": ["EM 알고리즘 (다음 강의, 클러스터링과 연결)"] },
+        { "name": "(미해결 논점) 밀도값은 1을 넘을 수 있는가?", "children": ["넘을 수 있음(예: V가 작을 때). 단, 전체를 적분하면 1이 되어야 함. KDE에서 윈도우를 겹치게 슬라이딩해도 추정 목적상 문제없다 (결론: 밀도는 1 초과 가능, 적분값만 1)"] }
+      ]
+    },
+    {
+      "name": "✅ 셀프 체크 (반드시 답할 수 있어야 함)",
+      "children": [
+        { "name": "Q1. 공통식 p(x)≈K/NV에서 KDE와 KNN은 각각 무엇을 고정하고 무엇을 구하는가? (방향까지)", "children": ["KDE = V 고정·K를 센다 / KNN = K 고정·V를 조절한다"] },
+        { "name": "Q2. bandwidth h를 너무 작게 / 너무 크게 잡으면 각각 어떤 문제가 생기는가?", "children": ["너무 작게 = noisy(과적합) / 너무 크게 = over-smoothing(디테일 손실)"] },
+        { "name": "Q3. KDE와 KNN을 parametric / non-parametric로 나누는 기준은? 왜 KDE는 non-parametric인가?", "children": ["기준 = 특정 분포 가정 여부. KDE는 분포를 가정하지 않으므로 non-parametric"] },
+        { "name": "Q4. GMM에서 π_k, μ_k, Σ_k는 각각 무엇이며, 추정할 파라미터는 몇 종인가?", "children": ["π_k=가중치/사전확률, μ_k=평균, Σ_k=공분산. 파라미터 3종"] },
+        { "name": "Q5. GMM의 MLE를 직접 풀 수 없는 두 이유는? 그래서 대신 쓰는 알고리즘은?", "children": ["① 로그 안의 합 ② 특이점 발산 → EM 알고리즘"] }
+      ]
+    }
+  ]
+}

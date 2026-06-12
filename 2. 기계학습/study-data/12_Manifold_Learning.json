@@ -1,0 +1,277 @@
+{
+  "id": "12_Manifold_Learning",
+  "title": "12강 · 매니폴드 학습 (Manifold Learning)",
+  "nodes": [
+    {
+      "name": "한 줄 정의 — 매니폴드 학습이란?",
+      "children": [
+        "고차원 데이터의 의미 있는 변화는 사실 저차원 곡면(매니폴드) 위에 놓여 있다 — 이 숨겨진 저차원 기하구조를 발견·표현하는 기법들(MDS, t-SNE, UMAP, Autoencoder)",
+        { "name": "어느 학습 범주인가?", "children": ["비지도학습(Unsupervised Learning)의 마지막 주제"] }
+      ]
+    },
+    {
+      "name": "★ 매니폴드 가설 (Manifold Hypothesis)",
+      "children": [
+        { "name": "실제 데이터의 차원은?", "children": ["매우 고차원으로 표현됨 — 이미지=수백만 픽셀, 음성, 언어 임베딩, 생물 측정, 로봇 센서"] },
+        { "name": "그런데 무엇이 다른가?", "children": ["데이터가 모든 방향(dimension)으로 자유롭게 변하지는 않음"] },
+        { "name": "변화를 제한하는 '숨겨진 구조(hidden structure)'는?", "children": ["물리 법칙, 의미적 관계(semantic relationship), 기하학적 제약, 시간적 연속성(temporal continuity), 과제 규칙"] },
+        { "name": "결론 (한 줄)", "children": ["데이터는 고차원 공간에 embedding 되어 있지만, 의미 있는 변화(meaningful variation)는 훨씬 낮은 차원의 구조 위에 존재"] }
+      ]
+    },
+    {
+      "name": "★ 매니폴드(Manifold) 정의",
+      "children": [
+        { "name": "정의 한 줄", "children": ["고차원 공간 안에 휘어지거나(curved) 박혀 있을(embedded) 수 있는 매끄러운(smooth) 저차원 공간"] },
+        { "name": "국소적 성질은? (★ 시험 단골)", "children": ["국소적으로는(locally) 더 단순한 저차원 공간처럼 행동"] },
+        { "name": "대표 예시", "children": ["Swiss roll 데이터는 3차원에 있지만 본질적으로는 2차원 곡면 → 이 곡면이 매니폴드"] }
+      ]
+    },
+    {
+      "name": "차원 축소(Dimensionality Reduction)와의 관계",
+      "children": [
+        { "name": "공통점", "children": ["둘 다 고차원 → 저차원 변환을 목표"] },
+        { "name": "차이 (교수 강조)", "children": ["차원 축소는 '어떤 차원을 남길까'에, 매니폴드 학습은 '데이터 구조(기하/위상)를 어떻게 잘 보존할까'에 초점"] },
+        { "name": "매니폴드 학습이 더 강조하는 것은?", "children": ["기하학적·위상학적(topological) 성질 보존"] },
+        { "name": "실무적으로는?", "children": ["거의 같은 트랙 — 시각화(visualization) 목적으로도 많이 사용"] }
+      ]
+    },
+    {
+      "name": "PCA를 매니폴드 학습으로 보기 (선형 baseline)",
+      "children": [
+        { "name": "PCA는 어떤 매니폴드 학습인가?", "children": ["선형(linear) 매니폴드 학습으로 볼 수 있음"] },
+        { "name": "PCA의 가정", "children": ["데이터가 원 특징 공간 안의 저차원 선형 부분공간(linear subspace) 위에(또는 근처에) 놓임"] },
+        { "name": "한계", "children": [
+          "선형 구조만 모델링 가능",
+          "매니폴드가 휘어져 있거나 비선형(nonlinear)이면 거리 왜곡·관계 손실",
+          { "name": "Swiss roll에서 무슨 일이?", "children": ["PCA는 선형 투영만 하므로 말린 구조를 '펼칠(unroll)' 수 없음 (X-Z 평면으로 직선 투영해버려 gradient 정보가 뭉개짐)"] },
+          { "name": "같은 데이터에 t-SNE를 쓰면?", "children": ["펼쳐진 구조(gradient)가 잘 드러남"] }
+        ]}
+      ]
+    },
+    {
+      "name": "다차원 척도법 (MDS, Multidimensional Scaling)",
+      "children": [
+        { "name": "개념 / 입력", "children": [
+          { "name": "어떤 위치의 기법?", "children": ["매니폴드 학습 중 가장 간단·빠른 고전적 기법"] },
+          { "name": "목적", "children": ["점들 간 거리(pairwise distance)를 최대한 보존하면서 저차원(보통 2D/3D)에 표현"] },
+          { "name": "입력이 특이한 점 (★)", "children": [
+            "데이터 좌표가 아니라 비유사도/거리 행렬(dissimilarity / distance matrix) D (N×N)가 주어짐",
+            "d_ij = 점 i, j 사이의 거리(또는 dissimilarity)",
+            "거리는 어떤 metric이든 가능 (유클리디안 등)"
+          ]},
+          { "name": "목표 수식", "children": ["점 x⁽¹⁾,…,x⁽ᴺ⁾ ∈ ℝᵖ 를 찾되, 그 유클리디안 거리가 원래 거리를 근사: ‖x⁽ⁱ⁾ − x⁽ʲ⁾‖ ≈ d_ij"] }
+        ]},
+        { "name": "알고리즘 절차 (Classical MDS)", "children": [
+          { "name": "1) 거리를 내적(inner product)과 연결", "children": [
+            "제곱 거리 전개: ‖x⁽ⁱ⁾ − x⁽ʲ⁾‖² = x⁽ⁱ⁾ᵀx⁽ⁱ⁾ + x⁽ʲ⁾ᵀx⁽ʲ⁾ − 2 x⁽ⁱ⁾ᵀx⁽ʲ⁾",
+            "모든 쌍의 내적을 알면 점들의 기하학적 배치를 복원할 수 있음"
+          ]},
+          { "name": "2) Gram 행렬 B 구성 (모든 내적을 한 번에)", "children": [
+            "B = X Xᵀ",
+            "B를 알면 eigendecomposition으로 좌표 X 복원 가능",
+            { "name": "문제는?", "children": ["B는 직접 주어지지 않고 거리 행렬만 주어짐 → 거리로부터 B를 만들어야 함"] }
+          ]},
+          { "name": "3) 이중 중심화(Double-centering)", "children": [
+            "제곱 거리를 내적으로 변환: 제곱 거리 행렬에서 행 평균, 열 평균을 빼고 전체 평균을 더함",
+            "B_ij = −½( d_ij² − d̄_i·² − d̄_·j² + d̄_··² )",
+            "d̄_i·² = (1/N)Σ_j d_ij², d̄_·j² = (1/N)Σ_i d_ij², d̄_··² = (1/N²)Σ_iΣ_j d_ij²",
+            "(행렬 형태로는 중심화한 X̃에 대해 X̃X̃ᵀ 와 동일 — 평균 빼는 과정과 동치)"
+          ]},
+          { "name": "4) 고유분해(Eigendecomposition)", "children": [
+            "B = V Λ Vᵀ",
+            "V = 고유벡터(주방향), Λ = 고유값 대각행렬(각 방향의 분산/정보량)"
+          ]},
+          { "name": "5) 좌표 복원", "children": [
+            "X = V Λ^(1/2),   B = X Xᵀ = V Λ^(1/2)(V Λ^(1/2))ᵀ",
+            "가장 큰 고유값/고유벡터만 선택 → 가장 중요한 기하구조를 담은 저차원 표현",
+            "각 행 = 한 데이터 점의 임베딩 좌표"
+          ]}
+        ]},
+        { "name": "★ PCA vs MDS (자주 나옴 — 비교표)", "children": [
+          { "name": "입력", "children": ["PCA = 데이터 행렬 X (좌표) / MDS = 거리 행렬 (좌표 없음, 거리만)"] },
+          { "name": "만드는 행렬", "children": ["PCA = 공분산 행렬 S = (1/N)XᵀX / MDS = Gram 행렬 B = XXᵀ"] },
+          { "name": "행렬 의미", "children": ["PCA = 변수(feature) 간 관계 (차원×차원) / MDS = 점(data) 간 관계, 내적 (점×점)"] },
+          { "name": "분해 대상", "children": ["PCA = 공분산 행렬의 고유벡터 = 주성분 / MDS = Gram 행렬의 고유분해로 좌표 복원"] }
+        ]},
+        { "name": "★ 핵심 결론 — 유클리디안 거리 MDS = PCA", "children": [
+          "MDS에 유클리디안 거리를 쓰면 결과 임베딩이 PCA와 수학적으로 동일",
+          { "name": "증명 스케치", "children": ["PCA는 XᵀX u = λu. 양변에 X를 곱하면 XXᵀ(Xu) = λ(Xu) ⇒ XXᵀv = λv → MDS 고유값 방정식과 같은 형태 (전치 위치만 다름)"] }
+        ]},
+        { "name": "MDS 장단점 / 확장", "children": [
+          { "name": "한계", "children": ["Classical MDS는 선형(linear) 방법 → 선형 기하구조만 캡처, 휘어진 비선형 매니폴드는 부정확"] },
+          { "name": "확장 (Non-metric MDS)", "children": [
+            "좌표가 아니라 거리 기반으로 정의되므로 더 일반적인 dissimilarity로 확장 가능",
+            "비계량 MDS(Non-metric MDS): 다른 dissimilarity measure 사용 → 더 복잡·비선형 구조 일부 모델링",
+            "(강의 예: non-metric MDS가 MNIST를 더 잘 구분하지만 13초 소요 vs classical MDS 0.053초 — 선형이라 매우 빠름)"
+          ]},
+          { "name": "용도 (교수)", "children": ["복잡한 데이터를 빠르게 2D/3D로 정사영해 일단 확인해보는 기초적·빠른 방법"] }
+        ]}
+      ]
+    },
+    {
+      "name": "★★★ t-SNE (t-Distributed Stochastic Neighbor Embedding)",
+      "children": [
+        { "name": "개요 — 이름 뜯어보기 (교수 강조)", "children": [
+          { "name": "무엇을 하는 기법?", "children": ["고차원 데이터를 2D/3D로 시각화하는 비선형(non-linear) 차원 축소"] },
+          { "name": "t-distributed", "children": ["저차원에서 Student's t-분포 사용"] },
+          { "name": "Stochastic", "children": ["거리가 아니라 확률(probability)로 유사도 표현 (확률론적 접근)"] },
+          { "name": "Neighbor Embedding", "children": ["국소 이웃(local neighborhood) 구조 보존이 핵심 목적"] },
+          { "name": "MDS와의 차이", "children": ["MDS는 거리로 직접 기하 재구성, t-SNE는 관계를 확률 분포로 모델링하고 분포를 맞춤"] }
+        ]},
+        { "name": "핵심 아이디어", "children": [
+          "두 개의 확률 분포를 만든다: ① 고차원 공간 유사도 분포 p_ij ② 저차원 공간 유사도 분포 q_ij",
+          { "name": "두 분포의 차이를 무엇으로 측정?", "children": ["KL 발산(Kullback-Leibler divergence)으로 측정 → 최소화"] }
+        ]},
+        { "name": "1) 고차원 유사도 (Gaussian)", "children": [
+          { "name": "조건부 확률 p_{j|i} 정의", "children": [
+            "점 x⁽ⁱ⁾ 중심의 가우시안으로 정의",
+            "p_{j|i} = exp(−‖x⁽ⁱ⁾ − x⁽ʲ⁾‖² / 2σ_i²) / Σ_{k≠i} exp(−‖x⁽ⁱ⁾ − x⁽ᵏ⁾‖² / 2σ_i²),   p_{i|i}=0",
+            "가까우면 p 높음, 멀면 p 낮음",
+            "σ_i = 점 x⁽ⁱ⁾ 주변 이웃의 spread(가우시안 bandwidth)",
+            "분모 = 정규화 항 (각 i에 대해 Σ_j p_{j|i}=1)"
+          ]},
+          { "name": "비대칭(asymmetric)인 이유는?", "children": ["p_{j|i} ≠ p_{i|j} (기준점 i, j의 σ_i, σ_j가 다르기 때문)"] },
+          { "name": "대칭화(symmetrize) — 결합 확률", "children": [
+            "p_ij = (p_{j|i} + p_{i|j}) / 2N",
+            "전체 Σ p_ij = 1 → 모든 점 쌍에 대한 확률 분포"
+          ]}
+        ]},
+        { "name": "2) 저차원 유사도 (Student's t-분포, df=1)", "children": [
+          "저차원 점 y⁽ⁱ⁾ (출력값, 우리가 찾는 것)에 대해 자유도 1의 t-분포 사용",
+          "q_ij = (1 + ‖y⁽ⁱ⁾ − y⁽ʲ⁾‖²)⁻¹ / Σ_{k≠l}(1 + ‖y⁽ᵏ⁾ − y⁽ˡ⁾‖²)⁻¹,   q_ii=0",
+          "제곱 유클리디안 거리에만 의존 → 이미 대칭이라 별도 대칭화 불필요"
+        ]},
+        { "name": "★★★ 왜 분포를 다르게 쓰나? (시험 단골 — 방향 절대 헷갈리지 말 것)", "children": [
+          { "name": "고차원에 가우시안을 쓰는 이유", "children": [
+            "가우시안은 거리에 따라 급격히 감소 → 가까운 점에 높은 확률, 먼 점엔 극히 작은 확률",
+            "따라서 국소 이웃(local neighborhood) 보존에 집중 (MDS보다 local 강조) → 가까운 점은 축소 후에도 가깝게 유지"
+          ]},
+          { "name": "저차원에 t-분포(가우시안 아님)를 쓰는 이유 = 밀집 문제(Crowding Problem) 해결", "children": [
+            "고차원에서 멀던 점들이 저차원에서는 자연스럽게 부자연스럽게 뭉쳐버림 (저차원에 정보를 욱여넣기 때문)",
+            "t-분포는 가우시안보다 꼬리가 두꺼움(heavier tails) → 저차원에서 점들이 더 퍼질 수 있음",
+            "결과: 고차원에서 멀던 점들이 저차원에서도 잘 분리되어 유지 (덜 뭉침)"
+          ]}
+        ]},
+        { "name": "3) 목적 함수 & 최적화", "children": [
+          { "name": "KL 발산 최소화", "children": ["KL(P‖Q) = Σ_{i≠j} p_ij log(p_ij / q_ij)"] },
+          { "name": "경사하강법(Gradient Descent)으로 저차원 좌표 y⁽ⁱ⁾ 갱신", "children": [
+            "∂KL/∂y⁽ⁱ⁾ = 4 Σ_j (p_ij − q_ij)(y⁽ⁱ⁾ − y⁽ʲ⁾)(1 + ‖y⁽ⁱ⁾ − y⁽ʲ⁾‖²)⁻¹",
+            "KL이 최소가 될 때까지 반복 → 최적 배치"
+          ]}
+        ]},
+        { "name": "★ 하이퍼파라미터: Perplexity", "children": [
+          { "name": "조절할 것은 무엇인가?", "children": ["p_ij, q_ij 자체엔 직접 조절 파라미터 없음. 단, 고차원의 σ_i를 우리가 정해야 함 (점마다 다름)"] },
+          { "name": "σ_i를 직접 고르는 대신?", "children": [
+            "perplexity 값을 지정 → 각 점의 σ_i가 자동 결정",
+            "Perplexity(P_i) = 2^{H(P_i)},   H(P_i) = −Σ_j p_{j|i} log₂ p_{j|i}",
+            "H(P_i) = 섀넌 엔트로피(Shannon entropy)"
+          ]},
+          { "name": "σ_i와 perplexity 관계", "children": ["작은 σ_i → 낮은 perplexity / 큰 σ_i → 높은 perplexity"] },
+          { "name": "perplexity의 의미는?", "children": [
+            "각 점 주변에서 고려하는 유효 이웃(effective number of neighbors) 수",
+            "작은 perplexity = 매우 국소적 관계 강조 / 큰 perplexity = 더 넓은 이웃 구조 반영"
+          ]},
+          { "name": "값은 어떻게 정하나?", "children": ["사용자가 결정하는 값 → 여러 값으로 실험 후 시각화 결과 보고 선택"] }
+        ]},
+        { "name": "t-SNE 정리 / 용도", "children": [
+          { "name": "MDS 대비 강점", "children": ["MDS는 선형 구조만, t-SNE는 비선형 구조 캡처 + 특히 이웃(local) 구조 보존이 강점 (MNIST에서 PCA/MDS보다 클래스 분리 뚜렷)"] },
+          { "name": "활용 (교수)", "children": ["원 데이터뿐 아니라 신경망의 activation을 시각화해 새 컴포넌트가 클래스를 더 잘 분리하는지 확인하는 용도로도 사용"] }
+        ]}
+      ]
+    },
+    {
+      "name": "UMAP (Uniform Manifold Approximation and Projection)",
+      "children": [
+        { "name": "무엇인가?", "children": ["위상수학(topology) + 매니폴드 학습에 기반한 비선형 차원 축소 (t-SNE보다 최신, 2018)"] },
+        { "name": "t-SNE와의 차이", "children": ["t-SNE는 확률 분포 + KL 최소화, UMAP은 가중 그래프(weighted graph) 구성 후 그 그래프 구조를 보존하는 저차원 임베딩 학습"] },
+        { "name": "무엇을 보존하나?", "children": ["모든 거리를 보존하려 하지 않고 국소 연결성(local connectivity)을 보존한 뒤 전역 구조로 결합"] },
+        { "name": "알고리즘 절차", "children": [
+          { "name": "1) k-최근접 이웃(k-NN)", "children": ["각 점 x⁽ⁱ⁾의 k개 최근접 이웃 집합 N_k(i) 찾기 (보통 유클리디안)"] },
+          { "name": "2) 유사도 가중치(similarity weight) 계산 (거리 → 가중치)", "children": [
+            "w_ij = exp(−(d(x⁽ⁱ⁾, x⁽ʲ⁾) − ρ_i) / σ_i),   ρ_i = min_{j∈N_k(i)} d(x⁽ⁱ⁾, x⁽ʲ⁾)",
+            "ρ_i = 국소 거리 정규화 항 → 최근접 이웃과의 강한 연결 보장(local 안정화)"
+          ]},
+          { "name": "3) 국소 bandwidth σ_i 자동 결정 (수치 탐색)", "children": [
+            "Σ_{j∈N_k(i)} exp(−(d(x⁽ⁱ⁾, x⁽ʲ⁾) − ρ_i) / σ_i) ≈ log₂ k",
+            "k로 σ_i가 정해짐 → 점마다 이웃 크기 달라짐",
+            "밀집(dense) 영역 → σ_i 작게 (아주 가까운 점만 높은 가중치), 희소(sparse) 영역 → σ_i 크게 (충분한 이웃 확보)"
+          ]},
+          { "name": "4) 대칭화 (퍼지 집합 합집합, fuzzy-set union)", "children": [
+            "방향성 가중치를 무방향으로: w_ij^(sym) = w_ij + w_ji − w_ij·w_ji",
+            "한쪽이라도 강하면 강하게, 둘 다 강하면 더 강하게, 빼는 항은 이중 계산 방지"
+          ]},
+          { "name": "5) 저차원 유사도 (가우시안/t 대신 유연한 family)", "children": [
+            "v_ij = 1 / (1 + a‖y⁽ⁱ⁾ − y⁽ʲ⁾‖^{2b})",
+            "a>0, b>0가 거리에 따른 감소 속도 제어 (가까우면 ≈1, 멀면 ≈0)",
+            "a, b는 하이퍼파라미터가 아니라 자동 결정됨 (교수: min_dist 등으로부터 정해지는 걸로 기억)"
+          ]},
+          { "name": "6) 목적 함수: 교차 엔트로피(Cross-Entropy) 최소화", "children": [
+            "w_ij^(sym) ≈ v_ij가 되도록",
+            "L = Σ_{i≠j} [ w_ij^(sym) log(w_ij^(sym)/v_ij) + (1 − w_ij^(sym)) log((1 − w_ij^(sym))/(1 − v_ij)) ]",
+            "확률적 경사하강법(SGD) + 음성 샘플링(negative sampling): 연결된 쌍은 당기고(pull), 샘플된 비연결 쌍은 밀어냄(push) → 모든 쌍 계산 회피"
+          ]}
+        ]},
+        { "name": "하이퍼파라미터", "children": ["k (이웃 수, 클수록 더 전역/덜 국소), min_dist (최소 거리) — 두 개를 조절해 적합한 시각화 탐색"] },
+        { "name": "결과", "children": ["MNIST에서 MDS·t-SNE보다 클래스 분리가 더 극명"] },
+        { "name": "주의 (교수)", "children": ["분리가 극명한 게 항상 좋은 건 아님 — 고차원→저차원 변환 시 생긴 변화가 실제 데이터의 변화인지, 모델이 억지로 만든 것인지 확인 어려움. 단, 시각화 목적이라면 잘 구별되는 게 유리"] }
+      ]
+    },
+    {
+      "name": "Autoencoder (Autoassociative Neural Network)",
+      "children": [
+        { "name": "신경망과 비지도학습", "children": ["신경망도 비지도학습(차원 축소·매니폴드 학습)에 사용 가능"] },
+        { "name": "자기연상 신경망(autoassociative) = 오토인코더", "children": ["출력 유닛 수 = 입력 유닛 수, 입력을 그대로 재구성(reconstruct)하도록 학습"] },
+        { "name": "학습 목표는?", "children": ["재구성 오차(reconstruction error) 최소화 (입력 vs 출력 차이)"] },
+        { "name": "★ 병목(bottleneck)", "children": [
+          "은닉층(hidden layer) 차원 M < 입력 차원 D",
+          "차원이 줄어 완벽 재구성 불가 → 가장 중요한 구조만 보존, 덜 중요한 변화는 버림 → 저차원 표현 학습"
+        ]},
+        { "name": "비선형 표현력", "children": ["은닉층을 여러 개 쌓고 비선형 활성화(nonlinear activation) 사용 → 선형 모델이 못 잡는 복잡한 비선형 관계 포착 (깊을수록 표현력 ↑ = '딥')"] },
+        { "name": "PCA와 비교", "children": ["Hinton & Salakhutdinov (2006, Science) — MNIST에서 PCA 투영(좌)보다 신경망 기반(오토인코더, 우)이 클래스를 더 잘 구별"] }
+      ]
+    },
+    {
+      "name": "★ 시험 포인트 / 자주 헷갈리는 점",
+      "children": [
+        { "name": "★★★ (최중요) t-SNE 분포 방향", "children": [
+          "고차원 = 가우시안(p) / 저차원 = Student t-분포(q). 절대 바꿔 외우지 말 것 (1순위 함정)",
+          { "name": "고차원 가우시안 이유는?", "children": ["국소 이웃 보존 (거리에 따라 급격히 감소)"] },
+          { "name": "저차원 t-분포 이유는?", "children": ["Crowding Problem 해결 (heavy tail로 점들 덜 뭉치게) ← 시험 단골"] },
+          { "name": "오답 함정", "children": ["'국소 보존을 위해 t-분포' → 오답. 국소 보존은 고차원 가우시안의 역할"] }
+        ]},
+        { "name": "매니폴드 가설 한 줄", "children": ["고차원 데이터의 의미 있는 변화는 저차원 매니폴드 위에 있다. 매니폴드 = 국소적으로 저차원처럼 행동하는 매끄러운 (휘어진) 공간"] },
+        { "name": "선형 vs 비선형 분류", "children": [
+          "PCA·MDS = 선형 (Swiss roll 못 펼침) / t-SNE·UMAP·Autoencoder(비선형 활성화) = 비선형",
+          { "name": "PCA = ?", "children": ["선형 매니폴드 학습. 선형 구조만 → Swiss roll 못 펼침 (비선형은 t-SNE/UMAP)"] },
+          { "name": "Swiss roll 못 펼치는 기법은?", "children": ["PCA (또는 classical MDS)"] }
+        ]},
+        { "name": "MDS 입력은?", "children": ["거리(비유사도) 행렬(좌표 아님). 'MDS는 데이터 좌표가 입력' → 오답"] },
+        { "name": "MDS 절차 한 줄", "children": ["제곱거리 → (이중 중심화) → Gram 행렬 B=XXᵀ → 고유분해 → X=VΛ^(1/2). 큰 고유값 방향만 골라 저차원 표현"] },
+        { "name": "★ 유클리디안 거리 MDS = PCA", "children": [
+          "결과 동일. PCA는 공분산(XᵀX, feature×feature), MDS는 Gram(XXᵀ, point×point) — 전치 위치만 다름",
+          { "name": "조건 주의", "children": ["무조건 같은 게 아니라 유클리디안 거리일 때 동일"] }
+        ]},
+        { "name": "공분산 vs Gram 헷갈리지 말 것", "children": ["공분산 = 변수(feature) 간 관계 / Gram = 점(data) 간 내적(유사도). 의미 바꾸면 오답"] },
+        { "name": "t-SNE 보존 대상 & 목적함수", "children": [
+          "t-SNE = 거리 아닌 '확률(유사도)' 보존, 핵심 목적 = 국소 이웃(neighbor) 구조 보존",
+          "t-SNE는 KL 발산 최소화 + 경사하강법 (UMAP은 교차 엔트로피 + SGD/negative sampling)"
+        ]},
+        { "name": "Perplexity = ?", "children": [
+          "유효 이웃 수, σ_i를 간접 지정. 작은 σ=낮은 perplexity(국소), 큰 σ=높은 perplexity(광역)",
+          { "name": "오답 함정", "children": ["'perplexity는 출력 차원 수' → 오답"] }
+        ]},
+        { "name": "대칭/비대칭 정리", "children": ["p_{j|i}는 비대칭, p_ij는 대칭(평균내서). q_ij는 처음부터 대칭"] },
+        { "name": "MDS vs t-SNE·UMAP", "children": ["MDS는 선형 / t-SNE·UMAP은 비선형. t-SNE·UMAP 핵심은 local(이웃) 구조 보존"] },
+        { "name": "UMAP vs t-SNE", "children": [
+          "둘 다 비선형·local 강조. t-SNE=확률분포+KL, UMAP=그래프 구조+교차 엔트로피. UMAP이 더 최신(2018)·빠름·전역 구조 더 보존",
+          { "name": "UMAP 하이퍼파라미터 / 자동 결정", "children": ["하이퍼파라미터 = k(이웃 수), min_dist. a, b는 자동 결정 (사용자가 정하는 게 아님 → 오답 주의)"] }
+        ]},
+        { "name": "Autoencoder 핵심", "children": [
+          "입력 차원 = 출력 차원, 병목 은닉층으로 압축, 재구성 오차 최소화. 비선형 활성화로 비선형 매니폴드 학습 가능 (PCA보다 분리 좋음, Hinton 2006)",
+          { "name": "오답 함정", "children": ["'병목 때문에 출력 차원이 입력보다 작다' → 오답. 입력=출력 차원, 작은 건 중간 은닉층(병목)"] }
+        ]},
+        { "name": "매니폴드 학습의 용도", "children": ["시각화 목적으로도 널리 사용 (MNIST 2D 임베딩, 신경망 activation 분석 등)"] }
+      ]
+    }
+  ]
+}

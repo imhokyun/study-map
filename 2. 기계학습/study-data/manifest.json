@@ -1,0 +1,11 @@
+{
+  "subject": "기계학습",
+  "lectures": [
+    "00_exam_strategy.json",
+    "09_Density_Estimation.json",
+    "10_Clustering.json",
+    "11_Dimensionality_Reduction.json",
+    "12_Manifold_Learning.json",
+    "13_Neural_Networks.json"
+  ]
+}

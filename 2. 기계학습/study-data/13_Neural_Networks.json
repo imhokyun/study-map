@@ -1,0 +1,258 @@
+{
+  "id": "13_Neural_Networks",
+  "title": "13강 · 신경망 (Neural Networks)",
+  "nodes": [
+    {
+      "name": "한눈에 보기 — 신경망의 흐름",
+      "children": [
+        { "name": "신경망의 모티베이션은?", "children": ["사람의 뇌(뉴런)에서 착안한 머신러닝 모델. 데이터만 주면 알아서 학습/태스크 수행"] },
+        { "name": "★ 발전 단계 4단계 (시험 자주 출제)", "children": [
+          { "name": "① McCulloch-Pitts 뉴런 (1943)", "children": ["가중합 + 임계값(threshold) 기반 이진 분류. 단, 가중치를 사람이 수동 설정 → 학습 불가 → 엄밀히 ML 모델이라 보기 애매"] },
+          { "name": "② Perceptron (Rosenblatt, 1958)", "children": ["가중치를 데이터로 자동 학습하는 첫 모델. 분류 오차로 가중치 갱신. 한계: 선형분리 가능(linearly separable) 문제만 해결(XOR 불가)"] },
+          { "name": "③ Adaline (Widrow & Hoff, 1959)", "children": ["임계값 통과 전의 연속 출력으로 오차 계산 → 연속 손실함수 + 경사하강(gradient descent) 도입. 현대 신경망의 디딤돌"] },
+          { "name": "④ Single-Layer NN", "children": ["Perceptron/Adaline의 일반화. Softmax + Cross-Entropy + 경사하강으로 학습"] }
+        ]},
+        { "name": "공통 구조는?", "children": ["입력 $x$ × 가중치 $w$ 가중합 → (+bias) → 활성화 함수 → 출력. 딥러닝도 이 구조를 레이어로 쌓은 것"] }
+      ]
+    },
+    {
+      "name": "1. McCulloch-Pitts 뉴런 (1943)",
+      "children": [
+        { "name": "무엇으로 모델링했나?", "children": ["뉴런(신경세포)을 이진 출력의 단순 논리 게이트로 모델링"] },
+        { "name": "생물학적 대응은?", "children": ["여러 신호가 수상돌기(dendrite)로 입력 → 세포체(soma)에서 통합 → 임계값 초과 시 축삭(axon)으로 출력"] },
+        { "name": "동작 방식은?", "children": [
+          "각 입력 $x_i$에 가중치 $w_i$ 곱 → 합산 → 임계값(threshold)과 비교",
+          "$f(\\boldsymbol{x},\\boldsymbol{w}) > \\text{threshold}$ → 양성 클래스(1), 아니면 음성 클래스(0)"
+        ]},
+        { "name": "입력 $x$와 가중치 $w$의 의미는?", "children": ["입력 $\\boldsymbol{x}$ = 관측 특징, 가중치 $\\boldsymbol{w}$ = 각 특징의 상대적 중요도"] },
+        { "name": "결정 경계(decision boundary)란?", "children": ["가중합 $f(\\boldsymbol{x},\\boldsymbol{w})$ = threshold 인 지점이 두 클래스를 나누는 경계"] },
+        { "name": "콘서트 참석 예시 (교수 강조)", "children": [
+          { "name": "아티스트 좋음", "children": ["입력 $x_1=1$ · 가중치 $w_1=0.7$"] },
+          { "name": "날씨 좋음", "children": ["입력 $x_2=0$ · 가중치 $w_2=0.6$"] },
+          { "name": "친구 옴", "children": ["입력 $x_3=1$ · 가중치 $w_3=0.5$"] },
+          { "name": "음식 제공", "children": ["입력 $x_4=0$ · 가중치 $w_4=0.3$"] },
+          { "name": "술 제공", "children": ["입력 $x_5=1$ · 가중치 $w_5=0.4$"] },
+          { "name": "결과 계산은?", "children": ["가중합 = $0.7+0+0.5+0+0.4 = 1.6$ > threshold($1.5$) → 출력 true (참석)"] }
+        ]},
+        { "name": "★ Bias의 의미 (교수 강조 — 놓치기 쉬움)", "children": [
+          { "name": "bias가 의미하는 것은?", "children": ["입력이 모두 0일 때의 기본 베이스라인(기준선)"] },
+          { "name": "bias가 없으면 생기는 문제는?", "children": ["결정 경계가 항상 원점(0)을 지나야 하므로, 데이터를 제대로 분리 못 하는 경우 발생 → 따라서 bias는 항상 영향을 염두에 둘 것"] }
+        ]},
+        { "name": "한계는?", "children": [
+          "가중치를 사람(operator)이 수동으로 설정 → 데이터로 학습 불가, 복잡한 태스크 처리 불가",
+          "머신러닝 철학(가중치 자동 학습)과 어긋남"
+        ]}
+      ]
+    },
+    {
+      "name": "2. Perceptron (Rosenblatt, 1958)",
+      "children": [
+        { "name": "핵심 기여는?", "children": ["가중치를 예시(데이터)로부터 자동 학습하는 최초의 모델. 구조는 M-P와 거의 동일($w$, bias, 가중합 $\\sum$, step function)이지만 핵심 기여는 \"학습 규칙\""] },
+        { "name": "학습 절차는?", "children": ["가중치/bias를 0 또는 작은 난수로 초기화 → 각 샘플 $x^{(i)}$에 대해 출력 $\\hat{y}^{(i)}$ 계산 → 실제 라벨 $y^{(i)}$과의 오차로 갱신"] },
+        { "name": "학습(업데이트) 규칙은?", "children": [
+          "$w_j \\leftarrow w_j + \\Delta w_j, \\quad b \\leftarrow b + \\Delta b$",
+          "$\\Delta w_j = \\eta\\,(y^{(i)} - \\hat{y}^{(i)})\\,x_j^{(i)}, \\quad \\Delta b = \\eta\\,(y^{(i)} - \\hat{y}^{(i)})$",
+          { "name": "$\\eta$란?", "children": ["학습률(learning rate), 보통 $0 < \\eta < 1$ 상수"] },
+          { "name": "$(y^{(i)} - \\hat{y}^{(i)})$란?", "children": ["분류 오차항(error term). 예측이 실제와 얼마나 떨어졌는지"] }
+        ]},
+        { "name": "★ 오차항 $(y-\\hat{y})$의 두 역할 (시험 포인트)", "children": [
+          { "name": "① 방향(Direction)", "children": ["예측 $\\hat{y}$가 너무 크면 → 가중치를 줄여 예측 낮춤. 너무 작으면 → 가중치 키움"] },
+          { "name": "② 크기(Magnitude)", "children": ["오차가 클수록 가중치 조정량도 큼 (정답이면 $\\Delta w = 0$, 갱신 없음)"] }
+        ]},
+        { "name": "수치 예제 (step function 출력 $-1/+1$)", "children": [
+          { "name": "초기 설정은?", "children": ["초기 $\\boldsymbol{w}=[w_0,w_1,w_2]=[0,1,0.5]$, $\\eta=0.2$ ($w_0$=bias)"] },
+          { "name": "초기 결정 경계는?", "children": ["$0 = w_0 x_0 + w_1 x_1 + w_2 x_2 = 0 + x_1 + 0.5 x_2 \\Rightarrow x_2 = -2x_1$"] },
+          { "name": "샘플 A ($x_1=1, x_2=1$, 목표 $y=+1$)", "children": ["$\\boldsymbol{w}^T\\boldsymbol{x} = 0+1+0.5 = 1.5 > 0 \\Rightarrow \\hat{y}=+1$. 정답 → 갱신 없음"] },
+          { "name": "샘플 B ($x_1=2, x_2=-2$, 목표 $y=-1$)", "children": [
+            "$\\boldsymbol{w}^T\\boldsymbol{x} = 0 + 1\\cdot2 + 0.5\\cdot(-2) = +1 = \\hat{y}$. 목표는 $-1$ → 오분류 → 갱신 필요",
+            "$w_0 = 0 + 0.2\\cdot(-2)\\cdot 1 = -0.4$",
+            "$w_1 = 1 + 0.2\\cdot(-2)\\cdot 2 = 0.2$",
+            "$w_2 = 0.5 + 0.2\\cdot(-2)\\cdot(-2) = 1.3$",
+            "새 결정 경계가 A, B를 모두 올바르게 분류"
+          ]}
+        ]},
+        { "name": "★ 풀 수 있는 문제 vs 못 푸는 문제", "children": [
+          { "name": "풀 수 있는 문제는?", "children": ["AND 문제 ✅, OR 문제 ✅ → 단일 직선으로 분리 가능(선형분리)"] },
+          { "name": "못 푸는 문제는?", "children": ["XOR 문제 ❌ → 하나의 직선으로 두 클래스를 분리 불가능. 아무리 초기화/반복해도 해결 못함"] },
+          { "name": "수렴 보장 조건은?", "children": ["단일층 퍼셉트론의 수렴은 두 클래스가 선형분리 가능할 때만 보장됨"] }
+        ]},
+        { "name": "역사적 맥락 (시험 배경지식)", "children": [
+          { "name": "1차 AI 겨울(1974–1980) 촉발은?", "children": ["Minsky & Papert의 저서 『Perceptrons』(1969)가 퍼셉트론의 한계(XOR 못 풂)를 강하게 지적"] },
+          { "name": "다층으로 극복 못 한 이유는?", "children": ["다층 퍼셉트론으로 극복 가능함은 알려졌으나, 당시엔 학습 방법(역전파)이 없었음"] },
+          { "name": "연구 방향 이동은?", "children": ["DARPA 등 펀딩 축소 → 1980년대 전문가 시스템(expert systems), SVM 등 지식기반 접근으로 이동"] }
+        ]}
+      ]
+    },
+    {
+      "name": "3. Adaline (Adaptive Linear Neuron, 1959)",
+      "children": [
+        { "name": "누가 언제 제안?", "children": ["Widrow & Ted Hoff(Stanford)가 Rosenblatt 직후 제안"] },
+        { "name": "★ 퍼셉트론과의 핵심 차이 (시험 단골)", "children": [
+          { "name": "퍼셉트론은 왜 경사하강 불가?", "children": ["임계값(step) 통과 후의 클래스 예측으로 오차 계산 → step function은 미분값이 0/정의 안 됨 → 경사하강 적용 불가"] },
+          { "name": "Adaline은 왜 경사하강 가능?", "children": ["선형 활성화 함수 $\\sigma(z)=z$ (항등함수) 사용, 임계값 통과 전 연속 출력으로 오차 계산 → 경사하강 적용 가능"] }
+        ]},
+        { "name": "무엇을 최소화하나?", "children": ["학습 시 MSE(평균제곱오차) 최소화"] },
+        { "name": "★ threshold는 언제 쓰나?", "children": ["학습 후 최종 분류 단계에서만 사용 → 학습(learning)과 분류(classification) 단계 분리 (완전히 제거된 것이 아님)"] },
+        { "name": "갱신 규칙은? (손실 감소 = 경사 반대 방향)", "children": [
+          "$\\boldsymbol{w} \\leftarrow \\boldsymbol{w} + \\Delta\\boldsymbol{w}, \\quad b \\leftarrow b + \\Delta b$",
+          "$\\Delta\\boldsymbol{w} = -\\eta\\,\\nabla_w L(\\boldsymbol{w},b), \\quad \\Delta b = -\\eta\\,\\nabla_b L(\\boldsymbol{w},b)$"
+        ]},
+        { "name": "의의는?", "children": ["연속 손실함수 정의 + 경사하강 최소화 아이디어 도입 → 현대 신경망(SGD 등)으로 가는 디딤돌"] },
+        { "name": "발전 요약 한 줄", "children": ["M-P(수동 가중치) → Perceptron(자동 학습) → Adaline(경사하강 도입). 한 단계씩 진보"] }
+      ]
+    },
+    {
+      "name": "4. 경사 기반 최적화 (Gradient-Based Optimization)",
+      "children": [
+        { "name": "목적함수(objective/loss/cost)란?", "children": [
+          "모델 성능을 수치화 (산 등반 비유: 산의 높이가 목적함수 값)",
+          "최대화 대상(reward/profit/utility) or 최소화 대상(loss/error). ML에선 주로 손실(loss) 최소화"
+        ]},
+        { "name": "Gradient(경사)란?", "children": [
+          "각 파라미터에 대한 편미분 벡터. 그 지점에서 기울기의 방향과 가파름(steepness)을 알려줌",
+          "비유: 등산가가 가장 가파른 방향을 보고 다음 발걸음을 결정"
+        ]},
+        { "name": "\"Descent\"인 이유는?", "children": ["목적함수 값을 감소시키는 방향(경사의 반대)으로 이동"] },
+        { "name": "★ gradient를 왜 step by step?", "children": ["gradient는 현재 위치 근방에서만 신뢰 가능(국소 정보) → 그래서 한 걸음씩(step by step) 진행"] },
+        { "name": "업데이트 규칙 (Cauchy, 1847)", "children": [
+          "$\\boldsymbol{w} \\leftarrow \\boldsymbol{w} + \\Delta\\boldsymbol{w}, \\quad b \\leftarrow b + \\Delta b$",
+          "$\\Delta\\boldsymbol{w} = -\\eta\\,\\nabla_w L(\\boldsymbol{w},b), \\quad \\Delta b = -\\eta\\,\\nabla_b L(\\boldsymbol{w},b)$"
+        ]},
+        { "name": "MSE 손실과 그 기울기", "children": [
+          { "name": "MSE 손실은?", "children": ["$L(\\boldsymbol{w},b) = \\frac{1}{n}\\sum_{i=1}^{n}\\left(y^{(i)} - \\sigma(z^{(i)})\\right)^2$"] },
+          { "name": "기울기는?", "children": ["$\\frac{\\partial L}{\\partial w_j} = -\\frac{2}{n}\\sum_i \\left(y^{(i)} - \\sigma(z^{(i)})\\right)x_j^{(i)}, \\quad \\frac{\\partial L}{\\partial b} = -\\frac{2}{n}\\sum_i \\left(y^{(i)} - \\sigma(z^{(i)})\\right)$"] },
+          { "name": "MSE의 성질은?", "children": ["비음수(non-negative), 낮을수록 좋고, 완벽 모델이면 0"] }
+        ]},
+        { "name": "★ 하이퍼파라미터 & 학습률 (시험 포인트)", "children": [
+          { "name": "하이퍼파라미터란?", "children": ["학습 전에 고정하는 값. 예) 학습률 $\\eta$, 에폭(epoch) 수"] },
+          { "name": "학습률 너무 작으면?", "children": ["(예 $\\eta=0.00001$): 수렴까지 에폭 매우 많이 필요(느림)"] },
+          { "name": "학습률 너무 크면?", "children": ["최소점을 overshoot → 진동(zigzag) 또는 발산(diverge)"] },
+          { "name": "학습률 스케줄러란?", "children": ["초반엔 큰 학습률로 빠르게, 최소점 근처에선 점차 줄임"] },
+          { "name": "학습률 범위는?", "children": ["보통 $0\\sim1$이지만 입력 스케일에 의존 → 입력을 정규화하면 보통 $0\\sim1$ 범위가 적절"] }
+        ]},
+        { "name": "표준화(Standardization)란?", "children": [
+          { "name": "무엇을 하나?", "children": ["각 특징의 평균을 0으로(centering), 표준편차를 1(unit variance)로 맞춤"] },
+          { "name": "효과는?", "children": ["스케일 큰 특징이 업데이트를 지배해 경로가 비효율적으로 zigzag하는 것을 방지 → 수렴 가속"] }
+        ]},
+        { "name": "★ 배치(Batch) 종류 비교 (시험 단골)", "children": [
+          { "name": "Full-batch GD", "children": ["업데이트 단위: 전체 데이터셋 · 정확/안정(robust)하게 최소점 직진, but 대용량에선 매우 느림/비용 큼"] },
+          { "name": "Stochastic GD (SGD)", "children": ["업데이트 단위: 단일 샘플 1개 · 갱신 빈번 → 수렴 빠름, but 오차면(error surface)이 noisy → 불안정. 장점: 얕은 국소 최소(shallow local minima) 탈출 용이(비선형 손실에서)"] },
+          { "name": "Mini-batch GD", "children": ["업데이트 단위: 데이터 부분집합(subset) · 둘의 절충(트레이드오프). 실무 표준"] },
+          { "name": "배치 vs 에폭 용어 구분은?", "children": ["하나의 부분집합 = 배치(batch), 전체 데이터를 1회 학습 = 에폭(epoch)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "5. 단일층 신경망 (Single-Layer Neural Networks)",
+      "children": [
+        { "name": "Perceptron/Adaline과의 관계는?", "children": ["Perceptron, Adaline 모두 단일층 신경망의 특수 경우. 입력 $\\boldsymbol{x}^{(i)}$, 라벨 $y^{(i)}\\in\\{0,1\\}$, 예측 $\\hat{y}^{(i)}$"] },
+        { "name": "★ 손실함수 선택: MSE vs Cross-Entropy", "children": [
+          { "name": "MSE는 언제 적합?", "children": ["회귀(연속값 예측)엔 적합. 분류에선 기울기가 충분히 강하지 않아 학습 비효율. $L_{MSE} = \\frac{1}{N}\\sum_{i=1}^{N}\\left(y^{(i)} - \\hat{y}^{(i)}\\right)^2$"] },
+          { "name": "Binary Cross-Entropy (BCE)는?", "children": ["분류에 적합. $L_{BCE} = -\\frac{1}{N}\\sum_{i=1}^{N}\\left[y^{(i)}\\log\\hat{y}^{(i)} + (1-y^{(i)})\\log(1-\\hat{y}^{(i)})\\right]$"] },
+          { "name": "BCE 특징은?", "children": ["확신에 찬 오답(confident but incorrect)에 훨씬 큰 페널티. 정답에서 멀어질수록 BCE가 급격히 커짐(MSE보다 가파름)"] }
+        ]},
+        { "name": "MSE vs BCE 수치 비교 ($y=1$)", "children": [
+          { "name": "$\\hat{y}=0.9$", "children": ["MSE = 0.01 · BCE = 0.105"] },
+          { "name": "$\\hat{y}=0.7$", "children": ["MSE = 0.09 · BCE = 0.357"] },
+          { "name": "$\\hat{y}=0.3$", "children": ["MSE = 0.49 · BCE = 1.204"] },
+          { "name": "$\\hat{y}=0.1$", "children": ["MSE = 0.81 · BCE = 2.302"] }
+        ]},
+        { "name": "★ BCE의 확률적 유도 (Logistic Regression 연결)", "children": [
+          { "name": "어떤 가정?", "children": ["각 예시가 베르누이 분포를 따른다고 가정"] },
+          { "name": "데이터셋의 가능도(likelihood)는?", "children": ["$p(\\boldsymbol{Y}|\\boldsymbol{X}) = \\prod_{i=1}^{N}\\left(\\hat{y}^{(i)}\\right)^{y^{(i)}}\\left(1-\\hat{y}^{(i)}\\right)^{1-y^{(i)}}$ · $y^{(i)}=1$이면 $\\hat{y}^{(i)}$, $y^{(i)}=0$이면 $1-\\hat{y}^{(i)}$ 기여"] },
+          { "name": "MLE(최대가능도추정)는?", "children": ["이 확률을 최대화. 직접 최대화는 불편 → 음의 로그(negative log) 취함: $-\\log p(\\boldsymbol{Y}|\\boldsymbol{X}) = -\\sum_{i=1}^{N}\\left[y^{(i)}\\log\\hat{y}^{(i)} + (1-y^{(i)})\\log(1-\\hat{y}^{(i)})\\right]$"] },
+          { "name": "결론은?", "children": ["이것이 음의 로그가능도(NLL) = 이진 분류에서의 BCE (라벨 독립 가정으로 곱 분해 가능)"] },
+          { "name": "교수 강조 포인트는?", "children": ["BCE는 임의로 나온 게 아니라 Logistic Regression의 likelihood로부터 유도되는 확률적 근거 있는 손실 → 둘은 같은 수식"] }
+        ]},
+        { "name": "One-hot Encoding & Softmax", "children": [
+          { "name": "One-hot encoding이란?", "children": ["라벨을 벡터로 표현. 예) Sunny=[1,0,0], Rainy=[0,1,0], Windy=[0,0,1]. 이진에선 $\\boldsymbol{y}^{(i)}\\in\\{[1,0],[0,1]\\}$. 다중 클래스 확장 시 필수"] },
+          { "name": "모델 출력은?", "children": ["벡터 $\\boldsymbol{z}^{(i)}\\in\\mathbb{R}^C$ (각 성분 = 해당 클래스 선호도)"] },
+          { "name": "왜 Softmax가 필요?", "children": ["raw 점수 $z_c$는 임의 실수 → 확률(비음수, 합=1) 아님 → Softmax로 변환"] },
+          { "name": "Softmax 수식은?", "children": ["$\\hat{y}_c^{(i)} = \\text{softmax}(\\boldsymbol{z}^{(i)})_c = \\frac{\\exp(z_c^{(i)})}{\\sum_{c'}\\exp(z_{c'}^{(i)})}$ · 지수화 → 비음수 보장, 정규화 → 합=1"] },
+          { "name": "Softmax 특징은?", "children": ["지수 때문에 점수 차이를 증폭 → 큰 점수가 더 지배적, 나머지 클래스 확률은 억제(합=1 제약)"] }
+        ]}
+      ]
+    },
+    {
+      "name": "6. 단일층 신경망의 경사하강 유도 (Forward/Backward)",
+      "children": [
+        { "name": "★ 시험 출제 범위 주의 (교수)", "children": ["시험에는 유도 과정 자체는 안 나옴. 다만 Feed-forward / Backprop의 개념과 흐름은 이해할 것"] },
+        { "name": "전체 구조는?", "children": ["입력 → 선형변환 $z$ → Softmax → $\\hat{y}$ → Cross-Entropy loss. 목표: $w_{21}$ (입력 $x_2$ → $z_1$로 가는 가중치)의 갱신 유도"] },
+        { "name": "단계별 수식", "children": [
+          { "name": "선형변환은?", "children": ["$z_1 = w_{21}x_2 + b_1$"] },
+          { "name": "Softmax는?", "children": ["$\\hat{y}_1 = \\dfrac{e^{z_1}}{e^{z_1}+e^{z_2}}$"] },
+          { "name": "Cross-Entropy는?", "children": ["$L = -\\left(y_1\\log\\hat{y}_1 + y_2\\log\\hat{y}_2\\right)$"] },
+          { "name": "갱신은?", "children": ["$w_{21} = w_{21} - \\eta\\cdot\\dfrac{\\partial L}{\\partial w_{21}}$"] }
+        ]},
+        { "name": "연쇄법칙(Chain rule) 왜 두 항?", "children": ["$w_{21}$이 $z_1$을 통해 $\\hat{y}_1$과 $\\hat{y}_2$ 둘 다에 영향(softmax 때문): $\\frac{\\partial L}{\\partial w_{21}} = \\left(\\frac{\\partial L}{\\partial \\hat{y}_1}\\frac{\\partial \\hat{y}_1}{\\partial z_1} + \\frac{\\partial L}{\\partial \\hat{y}_2}\\frac{\\partial \\hat{y}_2}{\\partial z_1}\\right)\\frac{\\partial z_1}{\\partial w_{21}}$"] },
+        { "name": "부분 도함수", "children": [
+          { "name": "$\\partial z_1/\\partial w_{21}$", "children": ["$= x_2$"] },
+          { "name": "같은 클래스 $\\partial \\hat{y}_1/\\partial z_1$", "children": ["$= \\hat{y}_1(1-\\hat{y}_1)$"] },
+          { "name": "다른 클래스 $\\partial \\hat{y}_2/\\partial z_1$", "children": ["$= -\\hat{y}_1\\hat{y}_2$"] },
+          { "name": "손실 도함수", "children": ["$\\dfrac{\\partial L}{\\partial \\hat{y}_1} = -\\dfrac{y_1}{\\hat{y}_1}, \\quad \\dfrac{\\partial L}{\\partial \\hat{y}_2} = -\\dfrac{y_2}{\\hat{y}_2}$"] }
+        ]},
+        { "name": "★ 종합 결과 (깔끔하게 떨어짐 — 시험 포인트)", "children": [
+          "$\\frac{\\partial L}{\\partial w_{21}} = \\left[-\\frac{y_1}{\\hat{y}_1}\\hat{y}_1(1-\\hat{y}_1) - \\frac{y_2}{\\hat{y}_2}(-\\hat{y}_1\\hat{y}_2)\\right]x_2 = (\\hat{y}_1 - y_1)\\,x_2$",
+          "$\\boxed{w_{21} = w_{21} - \\eta\\,(\\hat{y}_1 - y_1)\\,x_2}$"
+        ]},
+        { "name": "Feed-forward(순전파)란?", "children": ["입력 → 손실까지 앞으로 계산"] },
+        { "name": "Backpropagation(역전파)란?", "children": ["가중치 방향으로 역으로 추적(중간 미분값 구함). 단일층에선 단순 경사하강과 사실상 동일 — 진짜 backprop은 다층에서 체인이 깊어질 때"] },
+        { "name": "★ 단일층 신경망의 한계", "children": [
+          { "name": "어떤 문제를 못 푸나?", "children": ["선형분리 가능 문제만 해결 → 비선형 결정경계(예: XOR) 불가"] },
+          { "name": "표현력 제한이란?", "children": ["다층이 없어 계층적 특징(hierarchical features) 학습 불가 → 이미지 인식, NLP에 부적합"] },
+          { "name": "극복 방법은?", "children": ["다음 챕터: MLP(다층 퍼셉트론)로 레이어를 쌓아 극복 → 딥러닝"] }
+        ]}
+      ]
+    },
+    {
+      "name": "(보충) 직전 수업: 행렬 제곱근 / 대각화",
+      "children": [
+        { "name": "element-wise 제곱근은?", "children": ["행렬 제곱근은 단순히 element-wise로 $\\tfrac{1}{2}$ 제곱하면 안 됨(일반 행렬)"] },
+        { "name": "대각화 가능(diagonalizable)한 경우?", "children": ["대각화 → 고유값 분해(eigen-decomposition) → 제곱근 행렬 계산 가능"] },
+        { "name": "고유값으로 이루어진 대각 행렬은?", "children": ["대각 성분에 element-wise로 제곱근을 취하면 됨(특수·쉬운 케이스)"] },
+        { "name": "일반 케이스는?", "children": ["더 복잡한 과정 필요(참고 사항, 실제 손으로 구할 일은 거의 없고 코드로 처리)"] }
+      ]
+    },
+    {
+      "name": "★ 시험 포인트 / 자주 헷갈리는 점",
+      "children": [
+        { "name": "★★★ 세 모델 결정적 차이 — 가중치 학습", "children": [
+          { "name": "M-P 뉴런", "children": ["사람이 수동 설정 (학습 X) · 활성화: threshold(step) · 경사하강 불가 · 손실 없음"] },
+          { "name": "Perceptron (1958)", "children": ["데이터로 자동 학습(학습규칙) · step 통과 후 오차 계산 · 경사하강 불가(step 미분 0/정의X) · 손실: 분류오차"] },
+          { "name": "Adaline (1959)", "children": ["자동 학습 · 선형(연속) 출력, step 통과 전 오차 계산 · 경사하강 가능 · 손실: MSE"] },
+          { "name": "발전 흐름 한 줄", "children": ["수동 가중치 → 자동 학습 → 경사하강 도입. 한 단계씩 진보"] }
+        ]},
+        { "name": "★★★ 퍼셉트론이 XOR 못 푸는 이유는?", "children": ["XOR은 선형분리 불가(linearly non-separable). 단일 직선으로 두 클래스 분리 불가능 (AND/OR은 가능). 초기화·반복 무관하게 못 풂"] },
+        { "name": "★★★ Adaline이 경사하강 가능한 이유는?", "children": ["step 대신 선형(연속) 활성화로 임계값 통과 \"전\" 오차 계산 → 미분 가능"] },
+        { "name": "★★★ Bias의 의미는?", "children": ["입력이 모두 0일 때의 기본 베이스라인(기준선). 없으면 결정경계가 원점 강제 통과 → 분리 실패 가능"] },
+        { "name": "★★ MSE vs Cross-Entropy 용도는?", "children": ["회귀=MSE, 분류=BCE. BCE는 확신에 찬 오답에 큰 페널티 + Logistic Regression의 MLE에서 유도됨"] },
+        { "name": "★★ 배치 트레이드오프는?", "children": ["Full(안정·느림) ↔ SGD(빠름·noisy, 얕은 국소최소 탈출) ↔ Mini-batch(절충, 실무 표준)"] },
+        { "name": "★★ 학습률의 영향은?", "children": ["너무 작으면 느림, 너무 크면 overshoot/발산. 적절값 + 스케줄러 + 입력 정규화가 핵심"] },
+        { "name": "★ 오차항 $(y-\\hat{y})$의 두 역할은?", "children": ["방향(direction) + 크기(magnitude). 정답이면 $\\Delta w=0$"] },
+        { "name": "★ Softmax / One-hot의 의미는?", "children": ["Softmax = 점수를 확률(비음수·합1)로 변환, 지수가 큰 점수 증폭·작은 점수 억제 / One-hot = 다중클래스 라벨 표현"] },
+        { "name": "★ Feed-forward vs Backprop은?", "children": ["순전파 = 입력→손실 앞으로 / 역전파 = 손실→가중치 거꾸로 미분 전파. 역전파가 본격 필요한 경우는 다층 신경망"] },
+        { "name": "★ 1차 AI 겨울 배경지식은?", "children": ["Minsky & Papert 『Perceptrons』(1969)가 XOR 한계 지적 → 1차 AI 겨울(1974~1980), DARPA 펀딩 축소 → 전문가 시스템·SVM으로 이동"] },
+        { "name": "에폭 vs 배치 구분은?", "children": ["배치 = 한 번에 처리하는 부분집합, 에폭 = 전체 데이터 1회 순회"] },
+        { "name": "활성화 함수 (step vs 선형 vs sigmoid)", "children": [
+          { "name": "step function의 문제점은?", "children": ["출력 0/1(또는 −1/+1). 미분값이 0/정의 안 됨 → 경사하강 불가 → Perceptron이 여기 해당"] },
+          { "name": "선형(항등) 활성화는?", "children": ["Adaline이 사용, 연속이라 미분 가능 → 경사하강 가능"] },
+          { "name": "활성화 함수 역할은?", "children": ["가중합(선형 변환) 결과를 출력 형태(클래스/확률)로 변환하고, 비선형성 부여(딥러닝 맥락)"] }
+        ]},
+        { "name": "⚠️ 객관식 함정 포인트", "children": [
+          { "name": "\"Perceptron은 경사하강으로 학습한다\"", "children": ["함정(X). Perceptron은 step function이라 미분 불가 → 경사하강 불가. 경사하강은 Adaline부터"] },
+          { "name": "\"M-P 뉴런도 데이터로 가중치를 학습한다\"", "children": ["함정(X). M-P는 수동 설정. 자동 학습은 Perceptron부터"] },
+          { "name": "\"XOR 못 푸는 이유는 학습률/초기화가 나빠서\"", "children": ["함정(X). 근본 원인은 선형분리 불가. 초기화·반복 무관하게 못 풂"] },
+          { "name": "\"AND/OR도 단일 퍼셉트론으로 못 푼다\"", "children": ["함정(X). AND/OR은 선형분리 가능 → 풀 수 있음. 못 푸는 건 XOR"] },
+          { "name": "\"분류엔 MSE가 가장 적합\"", "children": ["함정(X). 분류엔 BCE/Cross-Entropy가 적합. MSE는 회귀용"] },
+          { "name": "\"SGD가 항상 가장 좋다/안정적이다\"", "children": ["함정(X). SGD는 빠르지만 noisy·불안정. 안정은 Full-batch, 실무 표준 절충은 Mini-batch"] },
+          { "name": "\"bias는 무시해도 되는 항\"", "children": ["함정(X). bias 없으면 결정경계가 원점 강제 통과 → 분리 실패 가능"] },
+          { "name": "\"Adaline은 threshold를 완전히 제거했다\"", "children": ["함정(X). 학습 단계에서만 안 쓰고, 최종 분류 단계에선 사용 (학습/분류 분리)"] },
+          { "name": "\"학습률은 크면 클수록 빨리 수렴해서 좋다\"", "children": ["함정(X). 너무 크면 overshoot·발산"] },
+          { "name": "\"배치(batch) = 에폭(epoch)\"", "children": ["함정(X). 배치=부분집합 1개, 에폭=전체 데이터 1회 순회"] },
+          { "name": "\"체인룰 미분을 계산하는 문제가 나온다\"", "children": ["함정(X). 교수가 직접 \"유도·미분 계산은 출제 안 됨\"이라 명시. 의미/흐름만"] }
+        ]},
+        { "name": "시험 형식 (교수 공지)", "children": ["4지선다 객관식, 수식 유도 과정/체인룰 미분 계산은 출제 안 됨. 개념과 수식의 의미(예: bias가 무엇을 의미하는지)는 출제 가능. 챕터당 약 4–5문제"] }
+      ]
+    }
+  ]
+}

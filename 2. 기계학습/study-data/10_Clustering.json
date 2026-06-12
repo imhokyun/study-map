@@ -1,0 +1,208 @@
+{
+  "id": "10_Clustering",
+  "title": "10강 · 군집화 (Clustering)",
+  "nodes": [
+    {
+      "name": "한 줄 정의 — 군집화란?",
+      "children": [
+        "레이블 없이(비지도학습) 데이터를 유사성(similarity) 기준으로 그룹으로 묶는 task",
+        { "name": "대표 3대 기법은?", "children": ["K-means(하드 할당·비확률적), GMM/EM(소프트 할당·확률적), 계층적 군집(Hierarchical, dendrogram)"] }
+      ]
+    },
+    {
+      "name": "핵심 개념",
+      "children": [
+        { "name": "군집화의 위상은?", "children": ["비지도학습(unsupervised learning)의 가장 기초적·대표적 task"] },
+        { "name": "밀도추정 vs 군집화 차이는?", "children": ["밀도추정(density estimation)은 데이터의 확률분포 자체를 모델링 / 군집화는 데이터 내부의 의미 있는 구조(그룹)를 발견"] },
+        { "name": "레이블 정보는?", "children": ["없음 → 순수하게 입력 공간(input space)의 유사성(similarity)만으로 분류"] },
+        { "name": "★ 결과는 무엇에 의존하나? (교수 강조)", "children": [
+          "결과는 '유사성을 어떻게 정의하느냐'에 따라 달라짐",
+          { "name": "의존하는 3가지", "children": ["① 유사성(거리)의 정의, ② 알고리즘 선택, ③ 데이터에 대한 가정(클러스터 모양/크기/밀도)"] },
+          "→ 같은 데이터셋이라도 방법에 따라 다른 군집 결과가 나옴",
+          { "name": "직관 예시(교수)", "children": ["과일 6개를 '색깔' 기준으로 나눌 수도, '종류' 기준으로 나눌 수도 있음 — 기준에 따라 군집이 달라짐"] }
+        ]}
+      ]
+    },
+    {
+      "name": "1. K-means 군집화",
+      "children": [
+        { "name": "정의·아이디어", "children": [
+          "가장 단순하고 널리 쓰이며 계산이 빠른(computationally efficient) 군집 기법",
+          { "name": "핵심 아이디어는?", "children": ["각 클러스터를 중심점(centroid, prototype)으로 대표하고, 각 데이터를 가장 가까운 centroid에 할당"] },
+          { "name": "할당 방식은?", "children": ["비확률적(non-probabilistic) 방법 + 하드 할당(hard assignment)"] }
+        ]},
+        { "name": "설정 (Notation)", "children": [
+          { "name": "관측치 표기", "children": ["N개의 관측치, 각 관측치는 D차원 벡터: x⁽ⁿ⁾ ∈ ℝᴰ, n=1,…,N"] },
+          { "name": "클러스터 중심 표기", "children": ["K개 클러스터로 조직화. 각 클러스터 중심(prototype): μ_k ∈ ℝᴰ, k=1,…,K"] }
+        ]},
+        { "name": "목적함수 J (within-cluster variance) ★", "children": [
+          { "name": "J 수식은?", "children": ["J = Σₙ Σₖ r_nk ‖x⁽ⁿ⁾ − μ_k‖²"] },
+          { "name": "‖x⁽ⁿ⁾ − μ_k‖² 의 의미는?", "children": ["점과 중심 사이의 제곱 유클리드 거리(squared Euclidean distance)"] },
+          { "name": "지시변수 r_nk 란? (binary)", "children": ["r_nk = 1 (x⁽ⁿ⁾이 클러스터 k에 할당), 0 (otherwise)"] },
+          { "name": "군집화는 무슨 문제로 귀결되나?", "children": ["r_nk와 μ_k를 찾아 J를 최소화하는 문제(minimization problem)"] }
+        ]},
+        { "name": "알고리즘 절차 (Coordinate Descent: 좌표 하강) ★★★", "children": [
+          { "name": "왜 좌표 하강을 쓰나?", "children": ["두 변수 집합(r_nk, μ_k)을 동시에 최적화하기 어려움 → 하나를 고정하고 다른 하나만 갱신하는 좌표 하강(coordinate descent) 사용"] },
+          { "name": "Step 1 (할당 단계, E-step에 대응)", "children": [
+            "μ_k 고정, r_nk 갱신 — 각 점을 가장 가까운 중심의 클러스터에 할당",
+            { "name": "r_nk 갱신식", "children": ["r_nk = 1 (k = argmin_k ‖x⁽ⁿ⁾ − μ_k‖²), 0 (otherwise)"] }
+          ]},
+          { "name": "Step 2 (갱신 단계, M-step에 대응)", "children": [
+            "r_nk 고정, μ_k 갱신",
+            { "name": "왜 닫힌 형식으로 풀리나?", "children": ["J는 μ_k에 대해 이차식(quadratic) → 미분 후 0으로 두면: ∂J/∂μ_k = 2 Σₙ r_nk(x⁽ⁿ⁾ − μ_k) = 0"] },
+            { "name": "μ_k 갱신식 (= 할당된 점들의 평균)", "children": ["μ_k = (Σₙ r_nk x⁽ⁿ⁾) / (Σₙ r_nk)"] },
+            { "name": "'K-means'라는 이름의 유래는?", "children": ["클러스터 중심이 할당된 점들의 평균(mean)값이라서"] }
+          ]},
+          { "name": "수렴(convergence) 조건은?", "children": ["r_nk와 μ_k가 더 이상 변하지 않을 때까지 반복"] },
+          { "name": "반복 시 J는 어떻게 되나?", "children": ["J(비용)는 단조적으로 감소 (step마다 J 하락)"] },
+          { "name": "초기 중심은?", "children": ["보통 랜덤(random)하게 설정 후 시작"] }
+        ]},
+        { "name": "응용", "children": ["이미지 분할(image segmentation) 등에 활용 (교재 예시)"] },
+        { "name": "K 선택 (하이퍼파라미터) ★★★", "children": [
+          { "name": "K는 어떤 값인가?", "children": ["K(클러스터 수)는 하이퍼파라미터 → 실험자가 직접 결정 (교수 강조: 단점 아닌 특성, 정답 없음)"] },
+          { "name": "왜 보편적 정답 K가 없나?", "children": ["비지도라서 보편적으로 옳은 K는 없음. 데이터가 고차원이면 K를 눈으로 파악하기 어려움"] },
+          { "name": "엘보우 방법(Elbow method)", "children": [
+            { "name": "WCSS/SSE 수식은?", "children": ["W(K) = Σₖ Σ_{x_i ∈ C_k} ‖x_i − μ_k‖²"] },
+            { "name": "어떤 K를 고르나?", "children": ["K가 커질수록 W(K)는 감소(클러스터가 많을수록 내부 분산↓)하지만, 감소가 급격히 완만해지는 '팔꿈치(elbow)' 지점의 K 선택"] },
+            { "name": "주의(함정)", "children": ["K=N까지 키우면 W=0이지만 군집화 의미가 사라짐 → 적당히 작은 K가 목표"] }
+          ]},
+          { "name": "실루엣 점수(Silhouette score)", "children": [
+            { "name": "a_i 란?", "children": ["같은 클러스터 내 다른 점들과의 평균 거리 (응집도)"] },
+            { "name": "b_i 란?", "children": ["가장 가까운 이웃 클러스터 점들과의 평균 거리 (분리도)"] },
+            { "name": "s_i 수식은?", "children": ["s_i = (b_i − a_i) / max(a_i, b_i)"] },
+            { "name": "전체 실루엣 S(K)는?", "children": ["S(K) = (1/N) Σ_i s_i"] },
+            { "name": "좋은 K의 기준은?", "children": ["s_i가 1에 가까울수록 잘 군집됨 (값이 클수록 좋은 K)"] }
+          ]}
+        ]}
+      ]
+    },
+    {
+      "name": "2. 가우시안 혼합 모델 (GMM) & EM",
+      "children": [
+        { "name": "K-means의 한계 → GMM 등장 동기 ★★", "children": [
+          { "name": "한계 ①", "children": ["클러스터가 구형(spherical)·비슷한 크기·잘 분리됨을 암묵적으로 가정 → 실제 데이터(모양·크기·방향 제각각)에 부적합"] },
+          { "name": "한계 ②", "children": ["비확률적 + 하드 할당 → 각 점이 정확히 한 클러스터에 단정 배정 → 클러스터가 겹치거나 멤버십이 불확실할 때 문제"] }
+        ]},
+        { "name": "GMM의 특징 (K-means 대비 개선)", "children": [
+          { "name": "확률적 접근이란?", "children": ["각 가우시안 성분(component)을 하나의 클러스터로 해석"] },
+          { "name": "공분산 구조의 효과는?", "children": ["각 클러스터가 자신의 공분산(covariance) 구조를 가짐 → 모양·크기·방향(shape/scale/orientation) 변화 허용"] },
+          { "name": "소프트 할당(soft assignment)이란?", "children": ["점을 하나에 단정 배정하지 않고, 각 성분에 속할 사후확률(posterior probability) 계산 → 겹치는 클러스터 자연스럽게 처리"] }
+        ]},
+        { "name": "GMM 분포 정의", "children": [
+          { "name": "분포 수식은?", "children": ["p(x) = Σₖ π_k 𝒩(x | μ_k, Σ_k)"] },
+          { "name": "혼합계수 π_k 란?", "children": ["mixing coefficient = 사전확률 p(z_k=1), 제약 Σₖ π_k = 1"] },
+          { "name": "𝒩(x | μ_k, Σ_k) 란?", "children": ["평균 μ_k, 공분산 Σ_k인 가우시안 밀도"] },
+          { "name": "로그우도(log-likelihood) 수식은?", "children": ["ln p(X | π,μ,Σ) = Σₙ ln Σₖ π_k 𝒩(x⁽ⁿ⁾ | μ_k, Σ_k)"] },
+          { "name": "왜 직접 MLE가 불가능한가?", "children": ["로그 안에 합(ln∑)이 있어 직접 최대화(MLE) 해석적으로 불가능(intractable) → EM 알고리즘 사용"] }
+        ]},
+        { "name": "EM 알고리즘 ★★★", "children": [
+          { "name": "E-step (Expectation): 책임도(responsibility) 계산", "children": [
+            "현재 파라미터 고정, 각 점 x⁽ⁿ⁾이 성분 k에서 생성되었을 사후확률(=책임도) 계산",
+            { "name": "γ(z_nk) 수식은?", "children": ["γ(z_nk) = p(z_k=1 | x⁽ⁿ⁾) = [π_k 𝒩(x⁽ⁿ⁾ | μ_k, Σ_k)] / [Σⱼ π_j 𝒩(x⁽ⁿ⁾ | μ_j, Σ_j)]"] },
+            { "name": "γ(z_nk)의 의미는?", "children": ["성분 k가 점 x⁽ⁿ⁾을 '설명하는 정도' (= 소프트 할당값)"] }
+          ]},
+          { "name": "M-step (Maximization): 파라미터 갱신", "children": [
+            { "name": "N_k 란?", "children": ["N_k = Σₙ γ(z_nk) (성분 k의 유효 점 수)"] },
+            { "name": "평균 μ_k 갱신식", "children": ["μ_k = (1/N_k) Σₙ γ(z_nk) x⁽ⁿ⁾"] },
+            { "name": "공분산 Σ_k 갱신식", "children": ["Σ_k = (1/N_k) Σₙ γ(z_nk)(x⁽ⁿ⁾ − μ_k)(x⁽ⁿ⁾ − μ_k)ᵀ"] },
+            { "name": "혼합계수 π_k 갱신식", "children": ["π_k = N_k / N"] },
+            { "name": "Σₖ π_k = 1 제약은 어떻게 처리?", "children": ["라그랑주 승수(Lagrange multiplier) λ로 처리 → 미분 결과 λ = −N이 나와 정리하면 위 식 도출"] }
+          ]},
+          { "name": "수렴까지 무엇을 반복?", "children": ["E↔M 반복"] },
+          { "name": "EM의 핵심 트릭은?", "children": ["ln∑의 직접 최대화를 피하고, E-step의 고정된 책임도를 이용해 각 step에서 닫힌 형식(closed-form) 갱신 제공"] }
+        ]}
+      ]
+    },
+    {
+      "name": "3. 계층적 군집 (Hierarchical Clustering)",
+      "children": [
+        { "name": "정의", "children": [
+          { "name": "무엇으로 표현하나?", "children": ["클러스터들의 계층(hierarchy)을 구축 → 덴드로그램(dendrogram)(트리)으로 표현, 여러 granularity 수준의 중첩 그룹 표현"] },
+          { "name": "K를 미리 고정하나?", "children": ["고정하지 않음 — 전체 계층을 먼저 만든 뒤, 구조를 보고 사후에 클러스터 수 결정"] },
+          { "name": "어디에 적합한가?", "children": ["클러스터 수를 모르는 탐색적 데이터 분석(EDA), 다중 스케일 구조 탐색에 적합"] },
+          { "name": "모델 성격은?", "children": ["비모수적(non-parametric), 유사성 기반"] }
+        ]},
+        { "name": "두 가지 방식 (표) ★★", "children": [
+          { "name": "응집형(Agglomerative)", "children": ["방향: Bottom-up · 절차: 각 점을 개별 클러스터로 시작 → 가장 유사한 클러스터를 반복 병합 · 특징: 단순해서 더 흔히 사용"] },
+          { "name": "분할형(Divisive)", "children": ["방향: Top-down · 절차: 전체를 한 클러스터로 시작 → 재귀적으로 분할"] }
+        ]},
+        { "name": "거리·연결 규칙(Linkage) ★★", "children": [
+          { "name": "두 단계 측정 절차는?", "children": ["1. 점 간 거리 측도(distance measure) 선택 (예: 유클리드 거리), 2. 연결 규칙(linkage rule) 선택: 점 간 거리를 이용해 두 클러스터 사이 거리를 정의"] },
+          { "name": "점 간 거리 vs linkage 차이는?", "children": ["점 간 거리 = 어떤 개별 점이 유사한지 / linkage = 클러스터 전체를 어떻게 비교하는지"] },
+          { "name": "Single linkage", "children": ["최소 거리 min_{a∈Ca, b∈Cb} d(a,b)"] },
+          { "name": "Complete linkage", "children": ["최대 거리 max_{a∈Ca, b∈Cb} d(a,b)"] },
+          { "name": "Average linkage", "children": ["평균 거리"] },
+          { "name": "Ward's method", "children": ["병합 시 within-cluster variance 증가를 최소화"] }
+        ]},
+        { "name": "Ward's method (상세)", "children": [
+          { "name": "within-cluster sum of squares W(C)는?", "children": ["W(C) = Σ_{x∈C} ‖x − μ_C‖², μ_C = (1/|C|) Σ_{x∈C} x"] },
+          { "name": "분산 증가량 Δ 정의는?", "children": ["C_a와 C_b 병합 시 Δ = W(C_a ∪ C_b) − W(C_a) − W(C_b)"] },
+          { "name": "Δ 단순화 결과는? (증명 생략)", "children": ["Δ = (|Ca||Cb| / (|Ca|+|Cb|)) ‖μ_Ca − μ_Cb‖²"] },
+          { "name": "Ward 연결 거리식은?", "children": ["D_Ward(Ca, Cb) = (|Ca||Cb| / (|Ca|+|Cb|)) ‖μ_Ca − μ_Cb‖²"] },
+          { "name": "linkage 선택의 영향은?", "children": ["linkage 선택에 따라 같은 데이터도 다른 군집 결과 발생"] }
+        ]}
+      ]
+    },
+    {
+      "name": "비교: K-means vs GMM vs 계층적 군집 (표) ★",
+      "children": [
+        { "name": "할당 방식", "children": ["K-means = 하드(hard) / GMM = 소프트(soft, 확률) / Hierarchical = 하드(병합/분할 구조)"] },
+        { "name": "확률 모델", "children": ["K-means = 비확률적 / GMM = 확률적 / Hierarchical = 비모수·비확률적"] },
+        { "name": "클러스터 모양 가정", "children": ["K-means = 구형·동일 크기 / GMM = 임의 공분산(타원·방향 허용) / Hierarchical = linkage에 따라 다양"] },
+        { "name": "클러스터 수 K", "children": ["K-means = 사전 지정(하이퍼파라미터) / GMM = 사전 지정 / Hierarchical = 사후 결정(덴드로그램)"] },
+        { "name": "핵심 파라미터", "children": ["K-means = 중심 μ_k / GMM = π_k, μ_k, Σ_k / Hierarchical = linkage 규칙"] },
+        { "name": "최적화", "children": ["K-means = coordinate descent / GMM = EM / Hierarchical = 탐욕적 병합/분할"] },
+        { "name": "속도", "children": ["K-means = 빠름 / GMM = 상대적 느림 / Hierarchical = 데이터 크면 느림"] },
+        { "name": "K-means ≈ GMM의 특수/극한 형태", "children": [
+          "K-means의 할당 단계 ↔ EM의 E-step, 중심 갱신 단계 ↔ EM의 M-step",
+          "K-means = 공분산을 구형으로 고정하고 하드 할당으로 단순화한 GMM으로 볼 수 있음"
+        ]}
+      ]
+    },
+    {
+      "name": "🎯 핵심 출제 포인트 (중요도순 · 표)",
+      "children": [
+        { "name": "1. K-means 2단계 반복(coordinate descent) ★★★", "children": ["출제각도: '어느 변수를 고정하고 무엇을 갱신하나' 단계 매칭"] },
+        { "name": "2. 하드 할당 vs 소프트 할당 (K-means vs GMM) ★★★", "children": ["출제각도: 단정 배정 vs 확률(책임도) 배정 구분"] },
+        { "name": "3. EM의 E-step / M-step 역할 ★★★", "children": ["출제각도: 책임도 계산=E, 파라미터 갱신=M"] },
+        { "name": "4. K 선택법 (엘보우 / 실루엣) ★★★", "children": ["출제각도: 녹취 강조. K는 하이퍼파라미터·정답 없음"] },
+        { "name": "5. 군집화 = 비지도·결과 비유일성 ★★", "children": ["출제각도: 레이블 없음, 기준 따라 군집 달라짐"] },
+        { "name": "6. K-means 목적함수 J의 의미 ★★", "children": ["출제각도: within-cluster variance(군집 내 분산)"] },
+        { "name": "7. GMM 등장 동기(K-means 한계 2가지) ★★", "children": ["출제각도: 구형 가정 + 하드 할당의 약점"] },
+        { "name": "8. 계층적 군집·덴드로그램 ★★", "children": ["출제각도: K 사후 결정, agglomerative vs divisive"] },
+        { "name": "9. Linkage 종류 차이 ★★", "children": ["출제각도: single(min)/complete(max)/average/Ward"] },
+        { "name": "10. 혼합계수 πk·책임도 γ의 의미 ★", "children": ["출제각도: πk=사전확률, γ=사후확률(소프트값)"] }
+      ]
+    },
+    {
+      "name": "★ 시험 포인트 / 자주 헷갈리는 점",
+      "children": [
+        { "name": "군집화는 비지도학습", "children": ["레이블 없음, 유사성만으로 분류. '결과가 유일하지 않다'(기준·알고리즘·가정에 따라 달라짐)는 점이 핵심"] },
+        { "name": "K-means 목적함수 J의 정체는?", "children": ["within-cluster variance(제곱 유클리드 거리의 합). 최소화 대상은 r_nk와 μ_k 두 가지. (군집 간 분산 아님!)"] },
+        { "name": "coordinate descent 단계 헷갈림", "children": ["둘을 동시에 못 풀어서 하나 고정·하나 갱신을 번갈아. Step1(중심 고정→할당), Step2(할당 고정→중심=평균). 'Step1=평균 갱신'은 오답(그건 Step2)"] },
+        { "name": "μ_k = 무엇?", "children": ["할당된 점들의 평균 → 'K-means' 이름의 유래. Step2는 미분=0으로 유도됨"] },
+        { "name": "K는 하이퍼파라미터 (정답 없음)", "children": ["선택: 엘보우(WCSS 감소가 완만해지는 지점), 실루엣(s_i = (b_i−a_i)/max(a_i,b_i), 클수록 좋음)"] },
+        { "name": "엘보우 함정", "children": ["K를 키우면 WCSS는 항상 감소(K=N이면 0) → 무조건 큰 K가 좋은 게 아님. K=N이면 군집 무의미"] },
+        { "name": "K-means 한계 2가지", "children": ["① 구형·동일 크기·분리 가정, ② 비확률적·하드 할당. → GMM이 이 둘을 해결"] },
+        { "name": "GMM은 직접 MLE 불가", "children": ["로그 안에 합(ln∑) → EM 필수. EM은 ln∑ 직접 최대화를 회피하고 closed-form 갱신 제공"] },
+        { "name": "책임도 γ(z_nk)의 의미는?", "children": ["사후확률 = 소프트 할당. E-step에서 계산, M-step에서 고정. N_k = Σₙ γ(z_nk)가 '유효 점 수'이며 평균·공분산·π_k 갱신식의 분모/가중치"] },
+        { "name": "혼합계수 π_k 는?", "children": ["π_k = N_k/N, 제약 Σₖ π_k = 1은 라그랑주 승수로 처리(λ = −N). π_k=사전확률 (γ=사후확률과 혼동 주의)"] },
+        { "name": "E-step ↔ M-step 대응", "children": ["K-means 할당=E-step, 중심갱신=M-step (구조적 유사성, 단골 비교 문제). 반대로 매칭한 보기 주의"] },
+        { "name": "계층적 군집은 K를 미리 안 정함", "children": ["덴드로그램 보고 사후 결정. Agglomerative(bottom-up, 더 흔함) vs Divisive(top-down) 방향 헷갈리지 말 것. '계층적은 K를 먼저 지정'은 오답"] },
+        { "name": "linkage 종류", "children": ["single(min)/complete(max)/average/Ward(분산 증가 최소). Ward 거리식 (|Ca||Cb|/(|Ca|+|Cb|))‖μ_Ca−μ_Cb‖² 기억. single↔complete min/max 뒤바꿈 주의"] },
+        { "name": "linkage 선택의 영향", "children": ["같은 데이터라도 linkage 선택에 따라 결과가 달라짐"] },
+        { "name": "밀도추정 vs 군집화", "children": ["밀도추정 = 분포 자체 모델링 / 군집화 = 그룹 구조 발견"] }
+      ]
+    },
+    {
+      "name": "✅ 셀프 체크",
+      "children": [
+        { "name": "Q1", "children": ["K-means에서 Step1(할당)과 Step2(중심 갱신)는 각각 무엇을 고정하고 무엇을 갱신하는가? 이것이 EM의 어느 step에 대응하는가?"] },
+        { "name": "Q2", "children": ["하드 할당과 소프트 할당의 차이는? 소프트 할당을 쓰는 기법과 그 할당값(γ)의 의미는?"] },
+        { "name": "Q3", "children": ["엘보우 방법에서 'K가 클수록 WCSS가 작으니 큰 K가 최선'이 틀린 이유는?"] },
+        { "name": "Q4", "children": ["K-means의 두 가지 한계와, GMM이 이를 어떻게 해결하는지(공분산·확률) 한 문장으로?"] },
+        { "name": "Q5", "children": ["계층적 군집이 K를 미리 정하지 않아도 되는 이유는? single·complete·Ward linkage의 차이는?"] }
+      ]
+    }
+  ]
+}
